@@ -17,11 +17,13 @@ docker compose up --build
 - Interface : http://localhost:3080
 - API / docs : http://localhost:8000/docs
 
-En local, Docker utilise encore **PostgreSQL**. Sur Render (gratuit), l’API utilise **SQLite**.
-
 ## Déploiement gratuit sur Render
 
-Le fichier `render.yaml` est en **plan free** uniquement (plus de Postgres Render payant).
+Le Blueprint (`render.yaml`) utilise uniquement le **free tier** :
+
+- Web service API (Docker / FastAPI)
+- **Render Postgres** free
+- Static site (frontend)
 
 ### Étapes
 
@@ -34,11 +36,13 @@ URLs typiques :
 - API : `https://compo-api.onrender.com`
 - Front : `https://compo-web.onrender.com`
 
-### Limites du gratuit
+### Limites free (Render)
 
-- L’API **s’endort** après inactivité (~30–60 s au réveil)
-- SQLite est **éphémère** : les données peuvent être perdues au redémarrage du service free
-- Si Render demande une CB même en free : c’est une vérif de compte, pas une facturation (dans la plupart des cas). Sinon, alternative 100 % free sans CB : [Neon](https://neon.tech) (Postgres free) + coller `DATABASE_URL` dans le service `compo-api`
+- L’API et Postgres free **s’endorment** après inactivité
+- Premier appel lent au réveil (~30–60 s)
+- Pas adapté à la production
+
+Si Render demande une CB : c’est souvent une vérification de compte. Le plan des services reste `free`.
 
 Si le nom de service API change, mettez à jour `VITE_API_URL` sur `compo-web` puis redéployez.
 
@@ -46,7 +50,7 @@ Si le nom de service API change, mettez à jour `VITE_API_URL` sur `compo-web` p
 
 - Frontend : React + Vite + TypeScript + @dnd-kit
 - Backend : FastAPI + SQLAlchemy
-- Base : PostgreSQL (local) / SQLite (Render free)
+- Base : PostgreSQL
 
 ## Usage rapide
 

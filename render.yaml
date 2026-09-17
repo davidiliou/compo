@@ -1,5 +1,9 @@
-# Render Blueprint — 100% free (pas de base Render payante)
-# Doc : https://render.com/docs/blueprint-spec
+# Render Blueprint — free web + free Postgres + free static site
+# https://render.com/docs/blueprint-spec
+databases:
+  - name: compo-db
+    plan: free
+
 services:
   - type: web
     name: compo-api
@@ -9,10 +13,10 @@ services:
     dockerContext: ./backend
     healthCheckPath: /api/health
     envVars:
-      # SQLite gratuit (fichier local). Les données peuvent être perdues
-      # quand le service free redémarre / se réveille.
       - key: DATABASE_URL
-        value: sqlite:///./compo.db
+        fromDatabase:
+          name: compo-db
+          property: connectionString
 
   - type: web
     name: compo-web
