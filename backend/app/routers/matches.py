@@ -70,6 +70,44 @@ def ensure_match_columns() -> None:
                 )
 
 
+def ensure_composition_columns() -> None:
+    """Ajoute is_public sur compositions si besoin."""
+    with engine.begin() as conn:
+        dialect = engine.dialect.name
+        if dialect == "sqlite":
+            cols = {
+                row[1]
+                for row in conn.execute(text("PRAGMA table_info(compositions)")).fetchall()
+            }
+            if "is_public" not in cols:
+                conn.execute(
+                    text(
+                        "ALTER TABLE compositions ADD COLUMN is_public "
+                        "BOOLEAN DEFAULT 0"
+                    )
+                )
+                conn.execute(
+                    text("UPDATE compositions SET is_public = 0 WHERE is_public IS NULL")
+                )
+        else:
+            cols = {
+                row[0]
+                for row in conn.execute(
+                    text(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_name = 'compositions'"
+                    )
+                ).fetchall()
+            }
+            if "is_public" not in cols:
+                conn.execute(
+                    text(
+                        "ALTER TABLE compositions ADD COLUMN is_public "
+                        "BOOLEAN NOT NULL DEFAULT FALSE"
+                    )
+                )
+
+
 def _to_out(match: Match) -> MatchOut:
     return MatchOut(
         id=match.id,

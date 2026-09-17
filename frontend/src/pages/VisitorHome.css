@@ -1,0 +1,60 @@
+.visitor-home {
+  max-width: 44rem;
+  margin: 0 auto;
+}
+
+.visitor-hero {
+  margin-bottom: 1.25rem;
+}
+
+.visitor-eyebrow {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.visitor-next h2,
+.visitor-home .panel > h2 {
+  margin: 0 0 0.85rem;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 400;
+  color: var(--green-deep);
+}
+
+.visitor-next-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.visitor-next-vs {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  color: var(--green-deep);
+  line-height: 1.1;
+}
+
+.visitor-next-meta {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+}
+
+.visitor-next-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.visitor-subs-title {
+  margin: 0.75rem 0 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--green-deep);
+}

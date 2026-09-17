@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 from .auth import seed_users
 from .database import Base, SessionLocal, engine
-from .routers import auth, compositions, match_events, matches, players, settings
-from .routers.matches import ensure_match_columns
+from .routers import auth, compositions, match_events, matches, players, public, settings
+from .routers.matches import ensure_composition_columns, ensure_match_columns
 from .routers.players import ensure_player_columns
 
 app = FastAPI(title="Compo Rugby API", version="1.0.0")
@@ -19,6 +19,7 @@ app.add_middleware(
 )
 
 app.include_router(auth.router, prefix="/api")
+app.include_router(public.router, prefix="/api")
 app.include_router(players.router, prefix="/api")
 app.include_router(matches.router, prefix="/api")
 app.include_router(match_events.router, prefix="/api")
@@ -31,6 +32,7 @@ def on_startup():
     Base.metadata.create_all(bind=engine)
     ensure_player_columns()
     ensure_match_columns()
+    ensure_composition_columns()
     db: Session = SessionLocal()
     try:
         seed_users(db)

@@ -70,7 +70,7 @@ export default function MatchDetailPage() {
     const name = prompt("Nouveau nom de la composition", active.name);
     if (!name?.trim()) return;
     try {
-      await api.updateComposition(active.id, name.trim());
+      await api.updateComposition(active.id, { name: name.trim() });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur");
@@ -104,6 +104,18 @@ export default function MatchDetailPage() {
     }
   };
 
+  const togglePublic = async () => {
+    if (!active) return;
+    try {
+      const updated = await api.updateComposition(active.id, {
+        is_public: !active.is_public,
+      });
+      setCompositions((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur");
+    }
+  };
+
   if (loading) return <p className="empty">Chargement…</p>;
   if (!match) return <p className="empty">Match introuvable.</p>;
 
@@ -112,7 +124,7 @@ export default function MatchDetailPage() {
   return (
     <div>
       <p style={{ marginBottom: "0.5rem" }}>
-        <Link className="linkish" to="/">
+        <Link className="linkish" to="/admin">
           ← Retour aux matchs
         </Link>
       </p>
@@ -129,7 +141,7 @@ export default function MatchDetailPage() {
         <button
           type="button"
           className="btn btn-accent"
-          onClick={() => navigate(`/matches/${matchId}/live`)}
+          onClick={() => navigate(`/admin/matches/${matchId}/live`)}
         >
           Mode match
         </button>
@@ -163,15 +175,24 @@ export default function MatchDetailPage() {
                 onClick={() => setActiveId(c.id)}
               >
                 {c.name}
+                {c.is_public ? " · public" : ""}
               </button>
             ))}
             {active && (
               <>
                 <button
+                  className={`btn btn-sm ${active.is_public ? "btn-accent" : "btn-ghost"}`}
+                  type="button"
+                  onClick={togglePublic}
+                  title="Visible en mode visiteur"
+                >
+                  {active.is_public ? "Public ✓" : "Rendre public"}
+                </button>
+                <button
                   className="btn btn-accent btn-sm"
                   type="button"
                   onClick={() =>
-                    navigate(`/matches/${matchId}/export/${active.id}`)
+                    navigate(`/admin/matches/${matchId}/export/${active.id}`)
                   }
                 >
                   Exporter
@@ -200,7 +221,7 @@ export default function MatchDetailPage() {
         <div className="panel">
           <p className="empty">
             Ajoutez d’abord des joueurs dans{" "}
-            <Link className="linkish" to="/players">
+            <Link className="linkish" to="/admin/players">
               l’effectif
             </Link>
             .

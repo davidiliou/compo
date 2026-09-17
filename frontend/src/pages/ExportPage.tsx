@@ -47,7 +47,7 @@ export default function ExportPage() {
     return (
       <div>
         <p className="error">{error || "Données manquantes"}</p>
-        <Link className="linkish" to={`/matches/${mid}`}>
+        <Link className="linkish" to={`/admin/matches/${mid}`}>
           ← Retour
         </Link>
       </div>

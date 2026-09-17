@@ -11,7 +11,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
 
   if (!loading && username) {
-    const redirect = (location.state as { from?: string } | null)?.from || "/";
+    const redirect = (location.state as { from?: string } | null)?.from || "/admin";
     return <Navigate to={redirect} replace />;
   }
 
@@ -34,7 +34,7 @@ export default function LoginPage() {
         <p className="login-brand">Compo Rugby</p>
         <h1>Connexion</h1>
         <p className="page-sub" style={{ marginBottom: "1.25rem" }}>
-          Identifiants club
+          Espace staff / admin
         </p>
         {error && <div className="error">{error}</div>}
         <div className="field" style={{ marginBottom: "0.85rem" }}>

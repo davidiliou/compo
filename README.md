@@ -4,10 +4,12 @@ Application client-serveur pour gérer les compositions d'équipe au rugby (XV).
 
 ## Fonctionnalités
 
+- **Mode visiteur** (sans login) : prochain match, matchs passés, compositions publiques, suivi du score en direct
+- **Mode admin** (`/admin`, login staff) : joueurs, matchs, compos, mode match (chrono), export PDF
 - **Joueurs** : CRUD (n°, prénom, n° de licence)
 - **Matchs** : CRUD avec adversaire, date, lieu, scores, type (XV / XII / VII)
 - **Mode match** : chrono par mi-temps (35 min par défaut), vibration/sonnerie, événements de score (essai, transformation, pénalité, drop) avec joueur et minute
-- **Compositions** : plusieurs compos par match selon le format (15+8, 12+8 ou 7+5)
+- **Compositions** : plusieurs compos par match selon le format (15+8, 12+8 ou 7+5) ; bouton **Rendre public** pour le mode visiteur
 - **PWA** : installable sur Android (Chrome → « Installer l’appli » / bannière)
 
 ## Démarrage local (Docker)

@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, JSON, Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -82,6 +82,7 @@ class Composition(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"))
     name: Mapped[str] = mapped_column(String(100), nullable=False, default="XV de départ")
+    is_public: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     match: Mapped["Match"] = relationship(back_populates="compositions")

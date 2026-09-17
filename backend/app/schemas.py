@@ -180,14 +180,62 @@ class CompositionCreate(BaseModel):
 
 class CompositionUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=100)
+    is_public: bool | None = None
 
 
 class CompositionOut(BaseModel):
     id: int
     match_id: int
     name: str
+    is_public: bool = False
     created_at: datetime
     slots: list[SlotOut] = []
+
+    model_config = {"from_attributes": True}
+
+
+class PublicPlayerOut(BaseModel):
+    """Joueur exposé au public (sans n° de licence)."""
+
+    id: int
+    number: int
+    first_name: str
+    last_name: str = ""
+    positions: list[int] = []
+
+    model_config = {"from_attributes": True}
+
+
+class PublicSlotOut(BaseModel):
+    id: int
+    position: int
+    player_id: int | None
+    player: PublicPlayerOut | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class PublicCompositionOut(BaseModel):
+    id: int
+    match_id: int
+    name: str
+    created_at: datetime
+    slots: list[PublicSlotOut] = []
+
+    model_config = {"from_attributes": True}
+
+
+class PublicMatchEventOut(BaseModel):
+    id: int
+    match_id: int
+    half: int
+    minute: int
+    event_type: str
+    team: str
+    player_id: int | None
+    points: int
+    created_at: datetime
+    player: PublicPlayerOut | None = None
 
     model_config = {"from_attributes": True}
 

@@ -91,6 +91,7 @@ def download_backup(db: Session = Depends(get_db)):
                 "id": c.id,
                 "match_id": c.match_id,
                 "name": c.name,
+                "is_public": bool(getattr(c, "is_public", False)),
                 "created_at": c.created_at.isoformat() if c.created_at else None,
             }
             for c in compositions
@@ -222,6 +223,7 @@ async def restore_backup(
             comp = Composition(
                 match_id=new_match_id,
                 name=str(row.get("name") or "Composition"),
+                is_public=bool(row.get("is_public", False)),
                 created_at=_parse_datetime(row.get("created_at")) or datetime.utcnow(),
             )
             db.add(comp)

@@ -134,6 +134,8 @@ def update_composition(
         raise HTTPException(status_code=404, detail="Composition introuvable")
     if payload.name is not None:
         comp.name = payload.name
+    if payload.is_public is not None:
+        comp.is_public = payload.is_public
     db.commit()
     return _load_composition(db, composition_id)
 

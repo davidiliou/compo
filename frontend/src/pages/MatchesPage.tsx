@@ -107,10 +107,10 @@ export default function MatchesPage() {
 
   const actions = (m: Match) => (
     <div className="row-actions">
-      <Link className="btn btn-accent btn-sm" to={`/matches/${m.id}/live`}>
+      <Link className="btn btn-accent btn-sm" to={`/admin/matches/${m.id}/live`}>
         Mode match
       </Link>
-      <Link className="btn btn-primary btn-sm" to={`/matches/${m.id}`}>
+      <Link className="btn btn-primary btn-sm" to={`/admin/matches/${m.id}`}>
         Compositions
       </Link>
       <button className="btn btn-ghost btn-sm" onClick={() => onEdit(m)}>
@@ -248,7 +248,7 @@ export default function MatchesPage() {
                     <tr key={m.id}>
                       <td>{new Date(m.match_date).toLocaleDateString("fr-FR")}</td>
                       <td>
-                        <Link className="linkish" to={`/matches/${m.id}`}>
+                        <Link className="linkish" to={`/admin/matches/${m.id}`}>
                           vs {m.opponent}
                         </Link>
                       </td>
@@ -269,7 +269,7 @@ export default function MatchesPage() {
               {matches.map((m) => (
                 <article key={m.id} className="data-card">
                   <div className="data-card-head">
-                    <Link className="linkish" to={`/matches/${m.id}`}>
+                    <Link className="linkish" to={`/admin/matches/${m.id}`}>
                       vs {m.opponent}
                     </Link>
                     <span className="score">

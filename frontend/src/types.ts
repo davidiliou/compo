@@ -74,6 +74,7 @@ export interface Composition {
   id: number;
   match_id: number;
   name: string;
+  is_public: boolean;
   created_at: string;
   slots: Slot[];
 }

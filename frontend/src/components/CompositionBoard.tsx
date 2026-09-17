@@ -89,13 +89,18 @@ export default function CompositionBoard({
       })
       .slice()
       .sort((a, b) => {
-        const an = (a.last_name || a.first_name).localeCompare(
-          b.last_name || b.first_name,
-          "fr",
-        );
-        return an || a.first_name.localeCompare(b.first_name, "fr");
+        const aTaken = assignedElsewhere.has(a.id) ? 1 : 0;
+        const bTaken = assignedElsewhere.has(b.id) ? 1 : 0;
+        if (aTaken !== bTaken) return aTaken - bTaken;
+        const byFirst = a.first_name.localeCompare(b.first_name, "fr", {
+          sensitivity: "base",
+        });
+        if (byFirst) return byFirst;
+        return (a.last_name || "").localeCompare(b.last_name || "", "fr", {
+          sensitivity: "base",
+        });
       });
-  }, [players, selectedPos, showAll, format]);
+  }, [players, selectedPos, showAll, format, assignedElsewhere]);
 
   useEffect(() => {
     if (selectedPos == null) return;

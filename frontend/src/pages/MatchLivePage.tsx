@@ -332,11 +332,11 @@ export default function MatchLivePage() {
   return (
     <div className="live-page">
       <p style={{ marginBottom: "0.5rem" }}>
-        <Link className="linkish" to={`/matches/${match.id}`}>
+        <Link className="linkish" to={`/admin/matches/${match.id}`}>
           ← Compositions
         </Link>
         {" · "}
-        <Link className="linkish" to="/">
+        <Link className="linkish" to="/admin">
           Matchs
         </Link>
       </p>

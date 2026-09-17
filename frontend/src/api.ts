@@ -97,6 +97,20 @@ async function downloadAuthed(path: string, fallbackName: string) {
   URL.revokeObjectURL(url);
 }
 
+async function publicRequest<T>(path: string): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(`${API}/public${path}`, {
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch {
+    throw new Error(networkErrorMessage());
+  }
+  if (!res.ok) throw new Error(await parseError(res));
+  if (res.status === 204) return undefined as T;
+  return res.json();
+}
+
 export const api = {
   login: (username: string, password: string) =>
     request<{ access_token: string; token_type: string; username: string }>(
@@ -160,10 +174,13 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ name }),
     }),
-  updateComposition: (id: number, name: string) =>
+  updateComposition: (
+    id: number,
+    data: { name?: string; is_public?: boolean },
+  ) =>
     request<Composition>(`/compositions/${id}`, {
       method: "PUT",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify(data),
     }),
   deleteComposition: (id: number) =>
     request<void>(`/compositions/${id}`, { method: "DELETE" }),
@@ -175,6 +192,15 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ slots }),
     }),
+
+  // --- Public (visiteurs) ---
+  publicGetMatches: () => publicRequest<Match[]>("/matches"),
+  publicGetUpcoming: () => publicRequest<Match | null>("/matches/upcoming"),
+  publicGetMatch: (id: number) => publicRequest<Match>(`/matches/${id}`),
+  publicGetCompositions: (matchId: number) =>
+    publicRequest<Composition[]>(`/matches/${matchId}/compositions`),
+  publicGetEvents: (matchId: number) =>
+    publicRequest<MatchEvent[]>(`/matches/${matchId}/events`),
 
   getSettingsInfo: () =>
     request<{
