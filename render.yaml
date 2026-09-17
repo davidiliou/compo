@@ -18,10 +18,10 @@ services:
           name: compo-db
           property: connectionString
 
+  # Les static sites sont toujours gratuits : pas de champ "plan"
   - type: web
     name: compo-web
     runtime: static
-    plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
