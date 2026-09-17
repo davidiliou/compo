@@ -1,8 +1,5 @@
-# Render Blueprint — https://render.com/docs/blueprint-spec
-databases:
-  - name: compo-db
-    plan: basic-256mb
-
+# Render Blueprint — 100% free (pas de base Render payante)
+# Doc : https://render.com/docs/blueprint-spec
 services:
   - type: web
     name: compo-api
@@ -12,10 +9,10 @@ services:
     dockerContext: ./backend
     healthCheckPath: /api/health
     envVars:
+      # SQLite gratuit (fichier local). Les données peuvent être perdues
+      # quand le service free redémarre / se réveille.
       - key: DATABASE_URL
-        fromDatabase:
-          name: compo-db
-          property: connectionString
+        value: sqlite:///./compo.db
 
   - type: web
     name: compo-web
@@ -29,6 +26,5 @@ services:
         source: /*
         destination: /index.html
     envVars:
-      # Doit correspondre au nom du service API ci-dessus
       - key: VITE_API_URL
         value: https://compo-api.onrender.com/api

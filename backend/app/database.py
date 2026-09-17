@@ -5,11 +5,8 @@ from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 
 def _database_url() -> str:
-    url = os.getenv(
-        "DATABASE_URL",
-        "postgresql://compo:compo@db:5432/compo",
-    )
-    # Render fournit parfois postgres:// — SQLAlchemy attend postgresql://
+    url = os.getenv("DATABASE_URL", "sqlite:///./compo.db")
+    # Render / Heroku fournissent parfois postgres:// — SQLAlchemy attend postgresql://
     if url.startswith("postgres://"):
         url = "postgresql://" + url[len("postgres://") :]
     return url
@@ -17,7 +14,11 @@ def _database_url() -> str:
 
 DATABASE_URL = _database_url()
 
-engine = create_engine(DATABASE_URL)
+_connect_args = {}
+if DATABASE_URL.startswith("sqlite"):
+    _connect_args = {"check_same_thread": False}
+
+engine = create_engine(DATABASE_URL, connect_args=_connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
