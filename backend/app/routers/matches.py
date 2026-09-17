@@ -1,11 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
+from ..auth import get_current_user
 from ..database import get_db
 from ..models import Match
 from ..schemas import MatchCreate, MatchOut, MatchUpdate
 
-router = APIRouter(prefix="/matches", tags=["matches"])
+router = APIRouter(
+    prefix="/matches",
+    tags=["matches"],
+    dependencies=[Depends(get_current_user)],
+)
 
 
 def _to_out(match: Match) -> MatchOut:

@@ -1,36 +1,110 @@
 import type { Composition, Match, Player } from "./types";
 
 const API = import.meta.env.VITE_API_URL || "/api";
+const TOKEN_KEY = "compo_token";
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+function authHeaders(extra?: HeadersInit): HeadersInit {
+  const headers: Record<string, string> = {
+    ...(extra as Record<string, string>),
+  };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
+async function parseError(res: Response): Promise<string> {
+  let detail = res.statusText;
+  try {
+    const body = await res.json();
+    detail = body.detail || detail;
+  } catch {
+    /* ignore */
+  }
+  if (res.status === 401) {
+    clearToken();
+  }
+  return typeof detail === "string" ? detail : JSON.stringify(detail);
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API}${path}`, {
-    headers: { "Content-Type": "application/json", ...(options?.headers || {}) },
     ...options,
+    headers: authHeaders({
+      "Content-Type": "application/json",
+      ...(options?.headers || {}),
+    }),
   });
-  if (!res.ok) {
-    let detail = res.statusText;
-    try {
-      const body = await res.json();
-      detail = body.detail || detail;
-    } catch {
-      /* ignore */
-    }
-    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
-  }
+  if (!res.ok) throw new Error(await parseError(res));
   if (res.status === 204) return undefined as T;
   return res.json();
 }
 
+async function requestForm<T>(path: string, form: FormData): Promise<T> {
+  const res = await fetch(`${API}${path}`, {
+    method: "POST",
+    body: form,
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(await parseError(res));
+  return res.json();
+}
+
+async function downloadAuthed(path: string, fallbackName: string) {
+  const res = await fetch(`${API}${path}`, { headers: authHeaders() });
+  if (!res.ok) throw new Error(await parseError(res));
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") || "";
+  const match = /filename="?([^"]+)"?/i.exec(disposition);
+  const filename = match?.[1] || fallbackName;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
-  // Players
+  login: (username: string, password: string) =>
+    request<{ access_token: string; token_type: string; username: string }>(
+      "/auth/login",
+      { method: "POST", body: JSON.stringify({ username, password }) },
+    ),
+  me: () => request<{ id: number; username: string }>("/auth/me"),
+
   getPlayers: () => request<Player[]>("/players"),
   createPlayer: (data: Omit<Player, "id">) =>
     request<Player>("/players", { method: "POST", body: JSON.stringify(data) }),
   updatePlayer: (id: number, data: Partial<Omit<Player, "id">>) =>
     request<Player>(`/players/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deletePlayer: (id: number) => request<void>(`/players/${id}`, { method: "DELETE" }),
+  importPlayers: async (file: File) => {
+    const body = new FormData();
+    body.append("file", file);
+    return requestForm<{
+      created: number;
+      updated: number;
+      skipped: number;
+      errors: string[];
+    }>("/players/import", body);
+  },
+  downloadPlayersTemplate: () =>
+    downloadAuthed("/players/template.xlsx", "modele_joueurs.xlsx"),
 
-  // Matches
   getMatches: () => request<Match[]>("/matches"),
   createMatch: (data: Omit<Match, "id" | "created_at" | "compositions_count">) =>
     request<Match>("/matches", { method: "POST", body: JSON.stringify(data) }),
@@ -41,7 +115,6 @@ export const api = {
   deleteMatch: (id: number) => request<void>(`/matches/${id}`, { method: "DELETE" }),
   getMatch: (id: number) => request<Match>(`/matches/${id}`),
 
-  // Compositions
   getCompositions: (matchId: number) =>
     request<Composition[]>(`/matches/${matchId}/compositions`),
   createComposition: (matchId: number, name: string) =>
@@ -64,4 +137,24 @@ export const api = {
       method: "PUT",
       body: JSON.stringify({ slots }),
     }),
+
+  getSettingsInfo: () =>
+    request<{
+      players: number;
+      matches: number;
+      compositions: number;
+      slots: number;
+    }>("/settings/info"),
+  downloadBackup: () =>
+    downloadAuthed("/settings/backup", `compo_backup_${Date.now()}.json`),
+  restoreBackup: async (file: File) => {
+    const body = new FormData();
+    body.append("file", file);
+    return requestForm<{
+      players: number;
+      matches: number;
+      compositions: number;
+      slots: number;
+    }>("/settings/restore", body);
+  },
 };

@@ -1,9 +1,36 @@
-import { NavLink, Route, Routes } from "react-router-dom";
+import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { AuthProvider, useAuth } from "./auth";
 import PlayersPage from "./pages/PlayersPage";
 import MatchesPage from "./pages/MatchesPage";
 import MatchDetailPage from "./pages/MatchDetailPage";
+import ExportPage from "./pages/ExportPage";
+import SettingsPage from "./pages/SettingsPage";
+import LoginPage from "./pages/LoginPage";
 
-export default function App() {
+function Protected({ children }: { children: React.ReactNode }) {
+  const { username, loading } = useAuth();
+  const location = useLocation();
+  if (loading) return <p className="empty">Chargement…</p>;
+  if (!username) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+  return children;
+}
+
+function AppShell() {
+  const { username, logout } = useAuth();
+  const location = useLocation();
+  const isLogin = location.pathname === "/login";
+
+  if (isLogin) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
   return (
     <div className="app">
       <header className="topbar">
@@ -15,15 +42,41 @@ export default function App() {
             Matchs
           </NavLink>
           <NavLink to="/players">Joueurs</NavLink>
+          <NavLink to="/settings">Paramètres</NavLink>
+          {username && (
+            <span className="user-chip">
+              {username}
+              <button type="button" className="btn btn-ghost btn-sm" onClick={logout}>
+                Déconnexion
+              </button>
+            </span>
+          )}
         </nav>
       </header>
       <main className="main">
-        <Routes>
-          <Route path="/" element={<MatchesPage />} />
-          <Route path="/players" element={<PlayersPage />} />
-          <Route path="/matches/:id" element={<MatchDetailPage />} />
-        </Routes>
+        <Protected>
+          <Routes>
+            <Route path="/" element={<MatchesPage />} />
+            <Route path="/players" element={<PlayersPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/matches/:id" element={<MatchDetailPage />} />
+            <Route
+              path="/matches/:matchId/export/:compositionId"
+              element={<ExportPage />}
+            />
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Protected>
       </main>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppShell />
+    </AuthProvider>
   );
 }

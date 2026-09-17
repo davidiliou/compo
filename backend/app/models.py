@@ -1,18 +1,31 @@
 from datetime import date, datetime
 
-from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import JSON, Date, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    username: Mapped[str] = mapped_column(
+        String(50), unique=True, nullable=False, index=True
+    )
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
 class Player(Base):
     __tablename__ = "players"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    number: Mapped[int] = mapped_column(Integer, nullable=False)
+    number: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    last_name: Mapped[str] = mapped_column(String(100), nullable=False, default="")
     license_number: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    positions: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
     slots: Mapped[list["CompositionSlot"]] = relationship(back_populates="player")
 
@@ -57,8 +70,10 @@ class CompositionSlot(Base):
     composition_id: Mapped[int] = mapped_column(
         ForeignKey("compositions.id", ondelete="CASCADE")
     )
-    position: Mapped[int] = mapped_column(Integer, nullable=False)  # 1-15
-    player_id: Mapped[int] = mapped_column(ForeignKey("players.id", ondelete="SET NULL"), nullable=True)
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    player_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id", ondelete="SET NULL"), nullable=True
+    )
 
     composition: Mapped["Composition"] = relationship(back_populates="slots")
     player: Mapped["Player | None"] = relationship(back_populates="slots")

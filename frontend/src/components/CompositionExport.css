@@ -1,0 +1,244 @@
+.export-root {
+  min-height: 100%;
+}
+
+.export-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.export-sheet {
+  background: white;
+  color: #132018;
+  border-radius: 14px;
+  border: 1px solid rgba(19, 32, 24, 0.12);
+  padding: 1.5rem;
+  box-shadow: 0 12px 40px rgba(13, 59, 36, 0.12);
+}
+
+.export-header {
+  text-align: center;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #0d3b24;
+}
+
+.export-brand {
+  margin: 0;
+  font-family: "Bebas Neue", sans-serif;
+  letter-spacing: 0.06em;
+  color: #0d3b24;
+  font-size: 1.35rem;
+}
+
+.export-header h1 {
+  margin: 0.2rem 0;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 2.2rem;
+  letter-spacing: 0.03em;
+  color: #0d3b24;
+}
+
+.export-meta {
+  margin: 0;
+  color: #5a6b60;
+}
+
+.export-pitch-section h2,
+.export-subs-section h2,
+.export-table-section h2 {
+  margin: 0 0 0.75rem;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 1.4rem;
+  letter-spacing: 0.03em;
+  color: #0d3b24;
+}
+
+.export-pitch {
+  position: relative;
+  width: min(420px, 100%);
+  margin: 0 auto 1.25rem;
+  aspect-ratio: 513 / 666;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0d3b24;
+}
+
+.export-pitch-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.export-slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 18%;
+  min-width: 52px;
+  aspect-ratio: 1;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  background: rgba(13, 59, 36, 0.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  color: white;
+}
+
+.export-slot.filled {
+  background: rgba(255, 255, 255, 0.92);
+  color: #0d3b24;
+  border-color: #0d3b24;
+}
+
+.export-slot-pos {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.export-slot-num {
+  font-weight: 800;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.export-slot-name {
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.export-slot-empty {
+  opacity: 0.6;
+  font-size: 0.85rem;
+}
+
+.export-subs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.45rem;
+  margin-bottom: 1.5rem;
+}
+
+.export-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid rgba(19, 32, 24, 0.15);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  background: #f7f5ef;
+}
+
+.export-sub.filled {
+  background: #e8f0ea;
+  border-color: #1a5c38;
+}
+
+.export-sub-pos {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 5px;
+  background: #c45c26;
+  color: white;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.export-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.export-table th,
+.export-table td {
+  border: 1px solid rgba(19, 32, 24, 0.18);
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+}
+
+.export-table th {
+  background: #0d3b24;
+  color: white;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.export-table tbody tr:nth-child(even) {
+  background: #f3f7f4;
+}
+
+.muted {
+  color: #5a6b60;
+}
+
+@media (max-width: 700px) {
+  .export-subs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .topbar,
+  .no-print,
+  .export-toolbar {
+    display: none !important;
+  }
+
+  .main {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .export-sheet {
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  .export-pitch {
+    width: 360px;
+    break-inside: avoid;
+  }
+
+  .export-subs-section,
+  .export-table-section {
+    break-inside: avoid;
+  }
+
+  .export-table {
+    font-size: 11pt;
+  }
+}

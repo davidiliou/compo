@@ -1,13 +1,26 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # --- Players ---
 class PlayerBase(BaseModel):
-    number: int = Field(..., ge=0, le=99)
+    number: int = Field(0, ge=0, le=99)
     first_name: str = Field(..., min_length=1, max_length=100)
+    last_name: str = Field("", max_length=100)
     license_number: str = Field(..., min_length=1, max_length=50)
+    positions: list[int] = Field(default_factory=list)
+
+    @field_validator("positions")
+    @classmethod
+    def validate_positions(cls, value: list[int]) -> list[int]:
+        cleaned: list[int] = []
+        for p in value:
+            if not isinstance(p, int) or p < 1 or p > 15:
+                raise ValueError("Les postes doivent être des numéros entre 1 et 15")
+            if p not in cleaned:
+                cleaned.append(p)
+        return cleaned
 
 
 class PlayerCreate(PlayerBase):
@@ -17,13 +30,35 @@ class PlayerCreate(PlayerBase):
 class PlayerUpdate(BaseModel):
     number: int | None = Field(None, ge=0, le=99)
     first_name: str | None = Field(None, min_length=1, max_length=100)
+    last_name: str | None = Field(None, max_length=100)
     license_number: str | None = Field(None, min_length=1, max_length=50)
+    positions: list[int] | None = None
+
+    @field_validator("positions")
+    @classmethod
+    def validate_positions(cls, value: list[int] | None) -> list[int] | None:
+        if value is None:
+            return value
+        cleaned: list[int] = []
+        for p in value:
+            if not isinstance(p, int) or p < 1 or p > 15:
+                raise ValueError("Les postes doivent être des numéros entre 1 et 15")
+            if p not in cleaned:
+                cleaned.append(p)
+        return cleaned
 
 
 class PlayerOut(PlayerBase):
     id: int
 
     model_config = {"from_attributes": True}
+
+
+class PlayerImportResult(BaseModel):
+    created: int
+    updated: int
+    skipped: int
+    errors: list[str] = []
 
 
 # --- Matches ---
@@ -66,7 +101,7 @@ class SlotOut(BaseModel):
 
 
 class SlotAssign(BaseModel):
-    position: int = Field(..., ge=1, le=15)
+    position: int = Field(..., ge=1, le=23)  # 1-15 titulaires, 16-23 remplaçants
     player_id: int | None = None
 
 

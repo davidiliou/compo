@@ -1,11 +1,12 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import CompositionBoard from "../components/CompositionBoard";
 import type { Composition, Match, Player } from "../types";
 
 export default function MatchDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const matchId = Number(id);
 
   const [match, setMatch] = useState<Match | null>(null);
@@ -50,7 +51,10 @@ export default function MatchDetailPage() {
   const createCompo = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      const created = await api.createComposition(matchId, newName.trim() || "Composition");
+      const created = await api.createComposition(
+        matchId,
+        newName.trim() || "Composition",
+      );
       setNewName("XV de départ");
       await load();
       setActiveId(created.id);
@@ -148,10 +152,27 @@ export default function MatchDetailPage() {
             ))}
             {active && (
               <>
-                <button className="btn btn-ghost btn-sm" type="button" onClick={renameCompo}>
+                <button
+                  className="btn btn-accent btn-sm"
+                  type="button"
+                  onClick={() =>
+                    navigate(`/matches/${matchId}/export/${active.id}`)
+                  }
+                >
+                  Exporter
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  type="button"
+                  onClick={renameCompo}
+                >
                   Renommer
                 </button>
-                <button className="btn btn-danger btn-sm" type="button" onClick={deleteCompo}>
+                <button
+                  className="btn btn-danger btn-sm"
+                  type="button"
+                  onClick={deleteCompo}
+                >
                   Supprimer
                 </button>
               </>

@@ -1,19 +1,36 @@
 import {
+  closestCenter,
+  CollisionDetection,
   DndContext,
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
   PointerSensor,
+  pointerWithin,
   useDraggable,
   useDroppable,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import { useMemo, useState } from "react";
 import type { Composition, Player } from "../types";
-import { POSITION_LABELS, POSITION_LAYOUT } from "../types";
+import {
+  MAX_POSITION,
+  POSITION_LABELS,
+  POSITION_LAYOUT,
+  STARTER_POSITIONS,
+  SUB_COUNT,
+  SUB_POSITIONS,
+  playerShortName,
+} from "../types";
 import "./CompositionBoard.css";
+
+/** Priorise le pointeur : évite qu’une pastille large chevauche plusieurs postes */
+const collisionDetection: CollisionDetection = (args) => {
+  const hits = pointerWithin(args);
+  if (hits.length > 0) return hits;
+  return closestCenter(args);
+};
 
 interface Props {
   composition: Composition;
@@ -31,7 +48,7 @@ function PlayerChip({
   dragId: string;
   compact?: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: dragId,
     data: { playerId: player.id },
   });
@@ -39,16 +56,13 @@ function PlayerChip({
   return (
     <div
       ref={setNodeRef}
-      style={{
-        transform: CSS.Translate.toString(transform),
-        opacity: isDragging ? 0.35 : 1,
-      }}
+      style={{ opacity: isDragging ? 0.25 : 1 }}
       className={`player-chip ${compact ? "compact" : ""}`}
       {...listeners}
       {...attributes}
     >
-      <span className="chip-num">{player.number}</span>
-      <span className="chip-name">{player.first_name}</span>
+      <span className="chip-num">{player.number || "·"}</span>
+      <span className="chip-name">{playerShortName(player)}</span>
     </div>
   );
 }
@@ -77,6 +91,28 @@ function PitchSlot({ position, player }: { position: number; player: Player | nu
   );
 }
 
+function SubSlot({ position, player }: { position: number; player: Player | null }) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: `drop-${position}`,
+    data: { position },
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`sub-slot ${isOver ? "over" : ""} ${player ? "filled" : ""}`}
+      title={`${position} — Remplaçant`}
+    >
+      <span className="sub-pos">{position}</span>
+      {player ? (
+        <PlayerChip player={player} dragId={`slot-${position}`} />
+      ) : (
+        <span className="sub-empty">Vide</span>
+      )}
+    </div>
+  );
+}
+
 function BoardBody({
   composition,
   players,
@@ -90,7 +126,7 @@ function BoardBody({
 }) {
   const slotsByPos = useMemo(() => {
     const map = new Map<number, Player | null>();
-    for (let i = 1; i <= 15; i++) map.set(i, null);
+    for (let i = 1; i <= MAX_POSITION; i++) map.set(i, null);
     for (const s of composition.slots) map.set(s.position, s.player);
     return map;
   }, [composition.slots]);
@@ -103,7 +139,8 @@ function BoardBody({
     return ids;
   }, [composition.slots]);
 
-  const bench = players.filter((p) => !assignedIds.has(p.id));
+  const available = players.filter((p) => !assignedIds.has(p.id));
+  const subFilled = SUB_POSITIONS.filter((pos) => slotsByPos.get(pos)).length;
   const { setNodeRef, isOver } = useDroppable({ id: "drop-bench" });
 
   return (
@@ -111,33 +148,41 @@ function BoardBody({
       <div className="compo-layout">
         <div className="pitch-wrap">
           <img src="/pitch.png" alt="Terrain de rugby" className="pitch-img" />
-          {Array.from({ length: 15 }, (_, i) => i + 1).map((pos) => (
+          {STARTER_POSITIONS.map((pos) => (
             <PitchSlot key={pos} position={pos} player={slotsByPos.get(pos) ?? null} />
           ))}
           {saving && <div className="saving-badge">Enregistrement…</div>}
         </div>
 
         <aside className="bench-panel">
-          <h3>Banc / effectif</h3>
-          <p className="bench-hint">Glissez un joueur sur une case du terrain.</p>
+          <h3>Remplaçants ({subFilled}/{SUB_COUNT})</h3>
+          <p className="bench-hint">Maximum 8 remplaçants (n°16 à 23).</p>
+          <div className="subs-grid">
+            {SUB_POSITIONS.map((pos) => (
+              <SubSlot key={pos} position={pos} player={slotsByPos.get(pos) ?? null} />
+            ))}
+          </div>
+
+          <h3 style={{ marginTop: "1.25rem" }}>Effectif disponible</h3>
+          <p className="bench-hint">Glissez vers le terrain ou un slot remplaçant.</p>
           <div ref={setNodeRef} className={`bench-list ${isOver ? "over" : ""}`}>
-            {bench.length === 0 ? (
+            {available.length === 0 ? (
               <p className="empty">Tous les joueurs sont placés.</p>
             ) : (
-              bench.map((p) => (
+              available.map((p) => (
                 <PlayerChip key={p.id} player={p} dragId={`bench-${p.id}`} />
               ))
             )}
           </div>
-          <p className="bench-hint">Déposez ici pour retirer un joueur du terrain.</p>
+          <p className="bench-hint">Déposez ici pour retirer un joueur.</p>
         </aside>
       </div>
 
-      <DragOverlay>
+      <DragOverlay dropAnimation={null}>
         {activePlayer ? (
-          <div className="player-chip overlay">
-            <span className="chip-num">{activePlayer.number}</span>
-            <span className="chip-name">{activePlayer.first_name}</span>
+          <div className="player-chip overlay drag-ghost">
+            <span className="chip-num">{activePlayer.number || "·"}</span>
+            <span className="chip-name">{playerShortName(activePlayer)}</span>
           </div>
         ) : null}
       </DragOverlay>
@@ -168,7 +213,7 @@ export default function CompositionBoard({
 
     const playerId = active.data.current?.playerId as number;
     const next = new Map<number, number | null>();
-    for (let i = 1; i <= 15; i++) next.set(i, null);
+    for (let i = 1; i <= MAX_POSITION; i++) next.set(i, null);
     for (const s of composition.slots) next.set(s.position, s.player_id);
 
     for (const [pos, pid] of next) {
@@ -182,6 +227,7 @@ export default function CompositionBoard({
       // already cleared
     } else if (overId.startsWith("drop-")) {
       const position = Number(overId.replace("drop-", ""));
+      if (position < 1 || position > MAX_POSITION) return;
       const previous = next.get(position) ?? null;
       const fromSlot = activeId.startsWith("slot-")
         ? Number(activeId.replace("slot-", ""))
@@ -193,7 +239,7 @@ export default function CompositionBoard({
     }
 
     await onChange(
-      Array.from({ length: 15 }, (_, i) => ({
+      Array.from({ length: MAX_POSITION }, (_, i) => ({
         position: i + 1,
         player_id: next.get(i + 1) ?? null,
       })),
@@ -201,7 +247,12 @@ export default function CompositionBoard({
   };
 
   return (
-    <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={collisionDetection}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+    >
       <BoardBody
         composition={composition}
         players={players}

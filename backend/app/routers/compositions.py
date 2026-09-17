@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
+from ..auth import get_current_user
 from ..database import get_db
 from ..models import Composition, CompositionSlot, Match, Player
 from ..schemas import (
@@ -10,25 +11,14 @@ from ..schemas import (
     SlotsBulkUpdate,
 )
 
-router = APIRouter(tags=["compositions"])
+router = APIRouter(
+    tags=["compositions"],
+    dependencies=[Depends(get_current_user)],
+)
 
-POSITION_LABELS = {
-    1: "Pilier gauche",
-    2: "Talonneur",
-    3: "Pilier droit",
-    4: "2e ligne",
-    5: "2e ligne",
-    6: "3e ligne aile",
-    7: "3e ligne aile",
-    8: "3e ligne centre",
-    9: "Demi de mêlée",
-    10: "Demi d'ouverture",
-    11: "Ailier",
-    12: "Centre",
-    13: "Centre",
-    14: "Ailier",
-    15: "Arrière",
-}
+STARTER_COUNT = 15
+SUB_COUNT = 8
+MAX_POSITION = STARTER_COUNT + SUB_COUNT  # 23
 
 
 def _load_composition(db: Session, composition_id: int) -> Composition | None:
@@ -42,9 +32,24 @@ def _load_composition(db: Session, composition_id: int) -> Composition | None:
 
 def _ensure_slots(db: Session, composition: Composition) -> None:
     existing = {s.position for s in composition.slots}
-    for pos in range(1, 16):
+    created = False
+    for pos in range(1, MAX_POSITION + 1):
         if pos not in existing:
-            db.add(CompositionSlot(composition_id=composition.id, position=pos, player_id=None))
+            db.add(
+                CompositionSlot(
+                    composition_id=composition.id, position=pos, player_id=None
+                )
+            )
+            created = True
+    if created:
+        db.commit()
+
+
+def _slots_for_new_composition(db: Session, composition_id: int) -> None:
+    for pos in range(1, MAX_POSITION + 1):
+        db.add(
+            CompositionSlot(composition_id=composition_id, position=pos, player_id=None)
+        )
     db.commit()
 
 
@@ -59,7 +64,12 @@ def list_compositions(match_id: int, db: Session = Depends(get_db)):
         .order_by(Composition.created_at)
         .all()
     )
-    return comps
+    for comp in comps:
+        _ensure_slots(db, comp)
+    return [
+        _load_composition(db, c.id)
+        for c in comps
+    ]
 
 
 @router.post(
@@ -76,9 +86,7 @@ def create_composition(
     db.add(comp)
     db.commit()
     db.refresh(comp)
-    for pos in range(1, 16):
-        db.add(CompositionSlot(composition_id=comp.id, position=pos, player_id=None))
-    db.commit()
+    _slots_for_new_composition(db, comp.id)
     return _load_composition(db, comp.id)
 
 
@@ -87,7 +95,8 @@ def get_composition(composition_id: int, db: Session = Depends(get_db)):
     comp = _load_composition(db, composition_id)
     if not comp:
         raise HTTPException(status_code=404, detail="Composition introuvable")
-    return comp
+    _ensure_slots(db, comp)
+    return _load_composition(db, composition_id)
 
 
 @router.put("/compositions/{composition_id}", response_model=CompositionOut)
@@ -126,6 +135,8 @@ def update_slots(
     used_players: set[int] = set()
 
     for item in payload.slots:
+        if item.position < 1 or item.position > MAX_POSITION:
+            raise HTTPException(status_code=400, detail=f"Position invalide: {item.position}")
         if item.position not in slot_by_pos:
             raise HTTPException(status_code=400, detail=f"Position invalide: {item.position}")
         if item.player_id is not None:

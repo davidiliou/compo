@@ -27,8 +27,9 @@
 .pitch-slot {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 18%;
-  min-width: 56px;
+  width: 13%;
+  min-width: 44px;
+  max-width: 58px;
   aspect-ratio: 1;
   border: 2px dashed rgba(255, 255, 255, 0.85);
   border-radius: 8px;
@@ -38,14 +39,16 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 4px;
+  padding: 3px;
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+  z-index: 2;
 }
 
 .pitch-slot.over {
   background: rgba(196, 92, 38, 0.55);
   border-color: #fff;
-  transform: translate(-50%, -50%) scale(1.06);
+  transform: translate(-50%, -50%) scale(1.08);
+  z-index: 5;
 }
 
 .pitch-slot.filled {
@@ -104,6 +107,61 @@
   font-size: 0.9rem;
 }
 
+.subs-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.sub-slot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 48px;
+  padding: 0.35rem 0.5rem;
+  border: 2px dashed var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.55);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.sub-slot.over {
+  border-color: var(--accent);
+  background: rgba(196, 92, 38, 0.1);
+}
+
+.sub-slot.filled {
+  border-style: solid;
+  border-color: var(--green-mid);
+}
+
+.sub-pos {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 6px;
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.sub-empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.sub-slot .player-chip {
+  flex: 1;
+  min-width: 0;
+  box-shadow: none;
+  padding: 0.3rem 0.45rem;
+}
+
 .bench-list {
   display: flex;
   flex-direction: column;
@@ -156,6 +214,28 @@
 .player-chip.overlay {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
   transform: scale(1.05);
+}
+
+.player-chip.drag-ghost {
+  width: 52px;
+  height: 52px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
+  padding: 0.2rem;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.player-chip.drag-ghost .chip-name {
+  font-size: 0.62rem;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chip-num {
