@@ -66,8 +66,17 @@ class MatchBase(BaseModel):
     opponent: str = Field(..., min_length=1, max_length=150)
     match_date: date
     venue: str = Field(default="Domicile", max_length=150)
+    team_size: int = Field(default=15, description="7, 12 ou 15")
+    half_duration_minutes: int = Field(default=35, ge=1, le=60)
     score_home: int | None = Field(None, ge=0)
     score_away: int | None = Field(None, ge=0)
+
+    @field_validator("team_size")
+    @classmethod
+    def validate_team_size(cls, value: int) -> int:
+        if value not in (7, 12, 15):
+            raise ValueError("Le type de match doit être 7, 12 ou 15")
+        return value
 
 
 class MatchCreate(MatchBase):
@@ -78,14 +87,74 @@ class MatchUpdate(BaseModel):
     opponent: str | None = Field(None, min_length=1, max_length=150)
     match_date: date | None = None
     venue: str | None = Field(None, max_length=150)
+    team_size: int | None = None
+    half_duration_minutes: int | None = Field(None, ge=1, le=60)
     score_home: int | None = Field(None, ge=0)
     score_away: int | None = Field(None, ge=0)
+
+    @field_validator("team_size")
+    @classmethod
+    def validate_team_size(cls, value: int | None) -> int | None:
+        if value is None:
+            return value
+        if value not in (7, 12, 15):
+            raise ValueError("Le type de match doit être 7, 12 ou 15")
+        return value
 
 
 class MatchOut(MatchBase):
     id: int
     created_at: datetime
     compositions_count: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+EVENT_POINTS = {
+    "essai": 5,
+    "transformation": 2,
+    "penalite": 3,
+    "drop": 3,
+}
+
+EVENT_TYPES = frozenset(EVENT_POINTS.keys())
+
+
+class MatchEventCreate(BaseModel):
+    half: int = Field(1, ge=1, le=2)
+    minute: int = Field(0, ge=0, le=120)
+    event_type: str
+    team: str = Field("home")
+    player_id: int | None = None
+
+    @field_validator("event_type")
+    @classmethod
+    def validate_event_type(cls, value: str) -> str:
+        cleaned = (value or "").strip().lower()
+        if cleaned not in EVENT_TYPES:
+            raise ValueError("Type d'événement invalide")
+        return cleaned
+
+    @field_validator("team")
+    @classmethod
+    def validate_team(cls, value: str) -> str:
+        cleaned = (value or "").strip().lower()
+        if cleaned not in ("home", "away"):
+            raise ValueError("Équipe invalide (home/away)")
+        return cleaned
+
+
+class MatchEventOut(BaseModel):
+    id: int
+    match_id: int
+    half: int
+    minute: int
+    event_type: str
+    team: str
+    player_id: int | None
+    points: int
+    created_at: datetime
+    player: PlayerOut | None = None
 
     model_config = {"from_attributes": True}
 
@@ -101,12 +170,12 @@ class SlotOut(BaseModel):
 
 
 class SlotAssign(BaseModel):
-    position: int = Field(..., ge=1, le=23)  # 1-15 titulaires, 16-23 remplaçants
+    position: int = Field(..., ge=1, le=23)
     player_id: int | None = None
 
 
 class CompositionCreate(BaseModel):
-    name: str = Field(default="XV de départ", min_length=1, max_length=100)
+    name: str = Field(default="Composition", min_length=1, max_length=100)
 
 
 class CompositionUpdate(BaseModel):

@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from ..auth import get_current_user
 from ..database import get_db
+from ..match_formats import default_composition_name, max_position, normalize_team_size
 from ..models import Composition, CompositionSlot, Match, Player
 from ..schemas import (
     CompositionCreate,
@@ -16,10 +17,6 @@ router = APIRouter(
     dependencies=[Depends(get_current_user)],
 )
 
-STARTER_COUNT = 15
-SUB_COUNT = 8
-MAX_POSITION = STARTER_COUNT + SUB_COUNT  # 23
-
 
 def _load_composition(db: Session, composition_id: int) -> Composition | None:
     return (
@@ -30,32 +27,58 @@ def _load_composition(db: Session, composition_id: int) -> Composition | None:
     )
 
 
-def _ensure_slots(db: Session, composition: Composition) -> None:
-    existing = {s.position for s in composition.slots}
-    created = False
-    for pos in range(1, MAX_POSITION + 1):
+def _team_size_for_composition(db: Session, composition: Composition) -> int:
+    match = db.get(Match, composition.match_id)
+    if not match:
+        return 15
+    return normalize_team_size(getattr(match, "team_size", 15))
+
+
+def sync_composition_slots(
+    db: Session, composition: Composition, team_size: int | None = None
+) -> None:
+    """Crée les slots manquants et retire ceux hors format."""
+    size = normalize_team_size(
+        team_size if team_size is not None else _team_size_for_composition(db, composition)
+    )
+    limit = max_position(size)
+    existing = {s.position: s for s in composition.slots}
+    changed = False
+
+    for pos in range(1, limit + 1):
         if pos not in existing:
             db.add(
                 CompositionSlot(
                     composition_id=composition.id, position=pos, player_id=None
                 )
             )
-            created = True
-    if created:
+            changed = True
+
+    for pos, slot in existing.items():
+        if pos < 1 or pos > limit:
+            db.delete(slot)
+            changed = True
+
+    if changed:
         db.commit()
 
 
-def _slots_for_new_composition(db: Session, composition_id: int) -> None:
-    for pos in range(1, MAX_POSITION + 1):
-        db.add(
-            CompositionSlot(composition_id=composition_id, position=pos, player_id=None)
-        )
-    db.commit()
+def sync_match_compositions(db: Session, match: Match) -> None:
+    size = normalize_team_size(getattr(match, "team_size", 15))
+    comps = (
+        db.query(Composition)
+        .options(joinedload(Composition.slots))
+        .filter(Composition.match_id == match.id)
+        .all()
+    )
+    for comp in comps:
+        sync_composition_slots(db, comp, size)
 
 
 @router.get("/matches/{match_id}/compositions", response_model=list[CompositionOut])
 def list_compositions(match_id: int, db: Session = Depends(get_db)):
-    if not db.get(Match, match_id):
+    match = db.get(Match, match_id)
+    if not match:
         raise HTTPException(status_code=404, detail="Match introuvable")
     comps = (
         db.query(Composition)
@@ -64,12 +87,10 @@ def list_compositions(match_id: int, db: Session = Depends(get_db)):
         .order_by(Composition.created_at)
         .all()
     )
+    size = normalize_team_size(getattr(match, "team_size", 15))
     for comp in comps:
-        _ensure_slots(db, comp)
-    return [
-        _load_composition(db, c.id)
-        for c in comps
-    ]
+        sync_composition_slots(db, comp, size)
+    return [_load_composition(db, c.id) for c in comps]
 
 
 @router.post(
@@ -80,13 +101,18 @@ def list_compositions(match_id: int, db: Session = Depends(get_db)):
 def create_composition(
     match_id: int, payload: CompositionCreate, db: Session = Depends(get_db)
 ):
-    if not db.get(Match, match_id):
+    match = db.get(Match, match_id)
+    if not match:
         raise HTTPException(status_code=404, detail="Match introuvable")
-    comp = Composition(match_id=match_id, name=payload.name)
+    size = normalize_team_size(getattr(match, "team_size", 15))
+    name = payload.name.strip() if payload.name else ""
+    if not name or name == "Composition":
+        name = default_composition_name(size)
+    comp = Composition(match_id=match_id, name=name)
     db.add(comp)
     db.commit()
     db.refresh(comp)
-    _slots_for_new_composition(db, comp.id)
+    sync_composition_slots(db, comp, size)
     return _load_composition(db, comp.id)
 
 
@@ -95,7 +121,7 @@ def get_composition(composition_id: int, db: Session = Depends(get_db)):
     comp = _load_composition(db, composition_id)
     if not comp:
         raise HTTPException(status_code=404, detail="Composition introuvable")
-    _ensure_slots(db, comp)
+    sync_composition_slots(db, comp)
     return _load_composition(db, composition_id)
 
 
@@ -128,17 +154,23 @@ def update_slots(
     comp = _load_composition(db, composition_id)
     if not comp:
         raise HTTPException(status_code=404, detail="Composition introuvable")
-    _ensure_slots(db, comp)
+    size = _team_size_for_composition(db, comp)
+    limit = max_position(size)
+    sync_composition_slots(db, comp, size)
     comp = _load_composition(db, composition_id)
 
     slot_by_pos = {s.position: s for s in comp.slots}
     used_players: set[int] = set()
 
     for item in payload.slots:
-        if item.position < 1 or item.position > MAX_POSITION:
-            raise HTTPException(status_code=400, detail=f"Position invalide: {item.position}")
+        if item.position < 1 or item.position > limit:
+            raise HTTPException(
+                status_code=400, detail=f"Position invalide: {item.position}"
+            )
         if item.position not in slot_by_pos:
-            raise HTTPException(status_code=400, detail=f"Position invalide: {item.position}")
+            raise HTTPException(
+                status_code=400, detail=f"Position invalide: {item.position}"
+            )
         if item.player_id is not None:
             if item.player_id in used_players:
                 raise HTTPException(

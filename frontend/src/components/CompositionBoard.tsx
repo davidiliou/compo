@@ -1,13 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Composition, Player } from "../types";
+import type { Composition, MatchFormat, Player, TeamSize } from "../types";
 import {
-  MAX_POSITION,
-  POSITION_LABELS,
-  POSITION_LAYOUT,
-  STARTER_COUNT,
-  STARTER_POSITIONS,
-  SUB_COUNT,
-  SUB_POSITIONS,
+  getMatchFormat,
+  maxPosition,
+  positionLabel,
+  starterPositions,
+  subPositions,
   playerDisplayName,
   playerShortName,
 } from "../types";
@@ -16,28 +14,31 @@ import "./CompositionBoard.css";
 interface Props {
   composition: Composition;
   players: Player[];
+  teamSize?: TeamSize;
   onChange: (slots: { position: number; player_id: number | null }[]) => Promise<void>;
   saving?: boolean;
 }
 
-function canPlayPosition(player: Player, position: number): boolean {
-  // Remplaçants : pas de filtre métier sur le n° de poste
-  if (position > STARTER_COUNT) return true;
+function canPlayPosition(
+  player: Player,
+  position: number,
+  format: MatchFormat,
+): boolean {
+  if (position > format.starters) return true;
   const prefs = player.positions || [];
-  // Pas de postes renseignés → proposé partout
   if (prefs.length === 0) return true;
-  return prefs.includes(position);
+  const mapped = format.xvPrefs[position] || [position];
+  return mapped.some((p) => prefs.includes(p));
 }
 
 function SlotFace({ player }: { player: Player }) {
   const first = (player.first_name || "").trim();
-  const lastInitial = (player.last_name || "").trim().charAt(0);
-  const label = lastInitial ? `${first} ${lastInitial}.` : first;
+  const last = (player.last_name || "").trim();
+  const label = [first, last].filter(Boolean).join(" ");
 
   return (
     <span className="slot-player">
-      {player.number > 0 && <span className="slot-jersey">{player.number}</span>}
-      <span className="slot-player-name">{label}</span>
+      <span className="slot-player-name">{label || "—"}</span>
     </span>
   );
 }
@@ -45,28 +46,38 @@ function SlotFace({ player }: { player: Player }) {
 export default function CompositionBoard({
   composition,
   players,
+  teamSize = 15,
   onChange,
   saving,
 }: Props) {
+  const format = useMemo(() => getMatchFormat(teamSize), [teamSize]);
+  const starters = useMemo(() => starterPositions(format), [format]);
+  const subs = useMemo(() => subPositions(format), [format]);
+  const limit = maxPosition(format);
+
   const [selectedPos, setSelectedPos] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
 
   const slotsByPos = useMemo(() => {
     const map = new Map<number, Player | null>();
-    for (let i = 1; i <= MAX_POSITION; i++) map.set(i, null);
-    for (const s of composition.slots) map.set(s.position, s.player);
-    return map;
-  }, [composition.slots]);
-
-  const assignedElsewhere = useMemo(() => {
-    const map = new Map<number, number>(); // playerId -> position
+    for (let i = 1; i <= limit; i++) map.set(i, null);
     for (const s of composition.slots) {
-      if (s.player_id) map.set(s.player_id, s.position);
+      if (s.position >= 1 && s.position <= limit) map.set(s.position, s.player);
     }
     return map;
-  }, [composition.slots]);
+  }, [composition.slots, limit]);
 
-  const subFilled = SUB_POSITIONS.filter((pos) => slotsByPos.get(pos)).length;
+  const assignedElsewhere = useMemo(() => {
+    const map = new Map<number, number>();
+    for (const s of composition.slots) {
+      if (s.player_id && s.position >= 1 && s.position <= limit) {
+        map.set(s.player_id, s.position);
+      }
+    }
+    return map;
+  }, [composition.slots, limit]);
+
+  const subFilled = subs.filter((pos) => slotsByPos.get(pos)).length;
   const currentPlayer = selectedPos != null ? slotsByPos.get(selectedPos) ?? null : null;
 
   const candidates = useMemo(() => {
@@ -74,7 +85,7 @@ export default function CompositionBoard({
     return players
       .filter((p) => {
         if (showAll) return true;
-        return canPlayPosition(p, selectedPos);
+        return canPlayPosition(p, selectedPos, format);
       })
       .slice()
       .sort((a, b) => {
@@ -84,7 +95,12 @@ export default function CompositionBoard({
         );
         return an || a.first_name.localeCompare(b.first_name, "fr");
       });
-  }, [players, selectedPos, showAll]);
+  }, [players, selectedPos, showAll, format]);
+
+  useEffect(() => {
+    if (selectedPos == null) return;
+    if (selectedPos > limit) setSelectedPos(null);
+  }, [selectedPos, limit]);
 
   useEffect(() => {
     if (selectedPos == null) return;
@@ -102,7 +118,7 @@ export default function CompositionBoard({
 
   const persist = async (next: Map<number, number | null>) => {
     await onChange(
-      Array.from({ length: MAX_POSITION }, (_, i) => ({
+      Array.from({ length: limit }, (_, i) => ({
         position: i + 1,
         player_id: next.get(i + 1) ?? null,
       })),
@@ -112,10 +128,10 @@ export default function CompositionBoard({
   const assignPlayer = async (playerId: number) => {
     if (selectedPos == null) return;
     const next = new Map<number, number | null>();
-    for (let i = 1; i <= MAX_POSITION; i++) next.set(i, null);
-    for (const s of composition.slots) next.set(s.position, s.player_id);
-
-    // Retirer le joueur de son éventuel autre poste
+    for (let i = 1; i <= limit; i++) next.set(i, null);
+    for (const s of composition.slots) {
+      if (s.position >= 1 && s.position <= limit) next.set(s.position, s.player_id);
+    }
     for (const [pos, pid] of next) {
       if (pid === playerId) next.set(pos, null);
     }
@@ -127,44 +143,45 @@ export default function CompositionBoard({
   const clearSlot = async () => {
     if (selectedPos == null) return;
     const next = new Map<number, number | null>();
-    for (let i = 1; i <= MAX_POSITION; i++) next.set(i, null);
-    for (const s of composition.slots) next.set(s.position, s.player_id);
+    for (let i = 1; i <= limit; i++) next.set(i, null);
+    for (const s of composition.slots) {
+      if (s.position >= 1 && s.position <= limit) next.set(s.position, s.player_id);
+    }
     next.set(selectedPos, null);
     setSelectedPos(null);
     await persist(next);
   };
 
-  const positionTitle =
+  const title =
     selectedPos == null
       ? ""
-      : selectedPos <= STARTER_COUNT
-        ? `${selectedPos} — ${POSITION_LABELS[selectedPos]}`
-        : `${selectedPos} — Remplaçant`;
+      : `${selectedPos} — ${positionLabel(format, selectedPos)}`;
 
   return (
     <>
       <div className="compo-layout">
         <div className="pitch-wrap">
-          <img src="/pitch.png" alt="Terrain de rugby" className="pitch-img" />
-          {STARTER_POSITIONS.map((pos) => {
+          <div className="pitch-field" aria-hidden="true" />
+          {starters.map((pos) => {
             const player = slotsByPos.get(pos) ?? null;
+            const layout = format.layout[pos];
             return (
               <button
                 key={pos}
                 type="button"
                 className={`pitch-slot clickable ${player ? "filled" : ""}`}
                 style={{
-                  top: POSITION_LAYOUT[pos].top,
-                  left: POSITION_LAYOUT[pos].left,
+                  top: layout.top,
+                  left: layout.left,
                 }}
-                title={`${pos} — ${POSITION_LABELS[pos]} (cliquer pour affecter)`}
+                title={`${pos} — ${format.labels[pos]} (cliquer pour affecter)`}
                 onClick={() => openSlot(pos)}
               >
                 <span className="slot-pos">{pos}</span>
                 {player ? (
                   <SlotFace player={player} />
                 ) : (
-                  <span className="slot-label">{POSITION_LABELS[pos]}</span>
+                  <span className="slot-label">{format.labels[pos]}</span>
                 )}
               </button>
             );
@@ -173,10 +190,12 @@ export default function CompositionBoard({
         </div>
 
         <aside className="bench-panel">
-          <h3>Remplaçants ({subFilled}/{SUB_COUNT})</h3>
+          <h3>
+            Remplaçants ({subFilled}/{format.subs})
+          </h3>
           <p className="bench-hint">Cliquez un slot pour choisir un joueur.</p>
           <div className="subs-grid">
-            {SUB_POSITIONS.map((pos) => {
+            {subs.map((pos) => {
               const player = slotsByPos.get(pos) ?? null;
               return (
                 <button
@@ -201,9 +220,8 @@ export default function CompositionBoard({
 
           <h3 style={{ marginTop: "1.25rem" }}>Aide</h3>
           <p className="bench-hint">
-            Cliquez un poste sur le terrain. La liste propose d’abord les joueurs
-            ayant ce poste dans leur profil. Utilisez « Afficher tous les joueurs »
-            pour forcer une autre affectation.
+            Format {format.shortLabel} : {format.starters} titulaires + {format.subs}{" "}
+            remplaçants. Cliquez un poste pour assigner un joueur.
           </p>
         </aside>
       </div>
@@ -223,7 +241,7 @@ export default function CompositionBoard({
           >
             <div className="slot-modal-head">
               <div>
-                <h2 id="slot-modal-title">Poste {positionTitle}</h2>
+                <h2 id="slot-modal-title">Poste {title}</h2>
                 {currentPlayer && (
                   <p className="bench-hint" style={{ margin: 0 }}>
                     Actuel : {playerDisplayName(currentPlayer)}
@@ -264,7 +282,7 @@ export default function CompositionBoard({
             <p className="bench-hint">
               {showAll
                 ? "Tous les joueurs de l’effectif"
-                : selectedPos <= STARTER_COUNT
+                : selectedPos <= format.starters
                   ? "Joueurs pouvant jouer ce poste"
                   : "Joueurs disponibles pour le banc"}
             </p>

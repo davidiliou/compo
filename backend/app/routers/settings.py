@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import get_current_user
 from ..database import get_db
-from ..models import Composition, CompositionSlot, Match, Player
+from ..models import Composition, CompositionSlot, Match, MatchEvent, Player
 
 router = APIRouter(
     prefix="/settings",
@@ -55,6 +55,7 @@ def download_backup(db: Session = Depends(get_db)):
     matches = db.query(Match).order_by(Match.id).all()
     compositions = db.query(Composition).order_by(Composition.id).all()
     slots = db.query(CompositionSlot).order_by(CompositionSlot.id).all()
+    events = db.query(MatchEvent).order_by(MatchEvent.id).all()
 
     payload = {
         "version": 1,
@@ -77,6 +78,8 @@ def download_backup(db: Session = Depends(get_db)):
                 "opponent": m.opponent,
                 "match_date": m.match_date.isoformat(),
                 "venue": m.venue,
+                "team_size": getattr(m, "team_size", 15) or 15,
+                "half_duration_minutes": getattr(m, "half_duration_minutes", 35) or 35,
                 "score_home": m.score_home,
                 "score_away": m.score_away,
                 "created_at": m.created_at.isoformat() if m.created_at else None,
@@ -100,6 +103,20 @@ def download_backup(db: Session = Depends(get_db)):
                 "player_id": s.player_id,
             }
             for s in slots
+        ],
+        "events": [
+            {
+                "id": e.id,
+                "match_id": e.match_id,
+                "half": e.half,
+                "minute": e.minute,
+                "event_type": e.event_type,
+                "team": e.team,
+                "player_id": e.player_id,
+                "points": e.points,
+                "created_at": e.created_at.isoformat() if e.created_at else None,
+            }
+            for e in events
         ],
     }
 
@@ -142,9 +159,11 @@ async def restore_backup(
     matches_data = payload.get("matches") or []
     compositions_data = payload.get("compositions") or []
     slots_data = payload.get("slots") or []
+    events_data = payload.get("events") or []
 
     try:
         # Ordre FK
+        db.query(MatchEvent).delete()
         db.query(CompositionSlot).delete()
         db.query(Composition).delete()
         db.query(Match).delete()
@@ -178,6 +197,12 @@ async def restore_backup(
                 opponent=str(row.get("opponent") or "").strip() or "Adversaire",
                 match_date=_parse_date(row.get("match_date") or date.today().isoformat()),
                 venue=str(row.get("venue") or "Domicile"),
+                team_size=int(row.get("team_size") or 15)
+                if int(row.get("team_size") or 15) in (7, 12, 15)
+                else 15,
+                half_duration_minutes=max(
+                    1, min(60, int(row.get("half_duration_minutes") or 35))
+                ),
                 score_home=row.get("score_home"),
                 score_away=row.get("score_away"),
                 created_at=_parse_datetime(row.get("created_at")) or datetime.utcnow(),
@@ -224,6 +249,38 @@ async def restore_backup(
                 )
             )
             slots_count += 1
+
+        from ..schemas import EVENT_POINTS
+
+        for row in events_data:
+            old_match_id = row.get("match_id")
+            new_match_id = (
+                match_map.get(int(old_match_id)) if old_match_id is not None else None
+            )
+            if new_match_id is None:
+                continue
+            etype = str(row.get("event_type") or "").strip().lower()
+            if etype not in EVENT_POINTS:
+                continue
+            old_player_id = row.get("player_id")
+            new_player_id = None
+            if old_player_id is not None:
+                new_player_id = player_map.get(int(old_player_id))
+            team = str(row.get("team") or "home").lower()
+            if team not in ("home", "away"):
+                team = "home"
+            db.add(
+                MatchEvent(
+                    match_id=new_match_id,
+                    half=1 if int(row.get("half") or 1) != 2 else 2,
+                    minute=max(0, int(row.get("minute") or 0)),
+                    event_type=etype,
+                    team=team,
+                    player_id=new_player_id if team == "home" else None,
+                    points=int(row.get("points") or EVENT_POINTS[etype]),
+                    created_at=_parse_datetime(row.get("created_at")) or datetime.utcnow(),
+                )
+            )
 
         db.commit()
     except HTTPException:

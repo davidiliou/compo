@@ -1,0 +1,38 @@
+.install-banner {
+  position: sticky;
+  bottom: 0;
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  margin: 0 -1rem -1rem;
+  background: #0d3b24;
+  color: #f2efe6;
+  border-top: 1px solid rgba(242, 239, 230, 0.2);
+}
+
+.install-banner p {
+  margin: 0;
+  flex: 1 1 12rem;
+  font-size: 0.95rem;
+}
+
+.install-banner-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.install-banner .btn {
+  background: #f2efe6;
+  color: #0d3b24;
+  border: none;
+}
+
+.install-banner .btn-ghost {
+  background: transparent;
+  color: #f2efe6;
+  border: 1px solid rgba(242, 239, 230, 0.45);
+}

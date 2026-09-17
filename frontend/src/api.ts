@@ -1,4 +1,4 @@
-import type { Composition, Match, Player } from "./types";
+import type { Composition, Match, MatchEvent, MatchEventType, MatchTeam, Player } from "./types";
 
 const API = import.meta.env.VITE_API_URL || "/api";
 const TOKEN_KEY = "compo_token";
@@ -38,31 +38,50 @@ async function parseError(res: Response): Promise<string> {
   return typeof detail === "string" ? detail : JSON.stringify(detail);
 }
 
+function networkErrorMessage(): string {
+  return `Impossible de joindre l’API (${API}). Ouvrez http://localhost:3080 (pas le port 8000), vérifiez que Docker tourne, puis rafraîchissez la page.`;
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
-    ...options,
-    headers: authHeaders({
-      "Content-Type": "application/json",
-      ...(options?.headers || {}),
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API}${path}`, {
+      ...options,
+      headers: authHeaders({
+        "Content-Type": "application/json",
+        ...(options?.headers || {}),
+      }),
+    });
+  } catch {
+    throw new Error(networkErrorMessage());
+  }
   if (!res.ok) throw new Error(await parseError(res));
   if (res.status === 204) return undefined as T;
   return res.json();
 }
 
 async function requestForm<T>(path: string, form: FormData): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
-    method: "POST",
-    body: form,
-    headers: authHeaders(),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API}${path}`, {
+      method: "POST",
+      body: form,
+      headers: authHeaders(),
+    });
+  } catch {
+    throw new Error(networkErrorMessage());
+  }
   if (!res.ok) throw new Error(await parseError(res));
   return res.json();
 }
 
 async function downloadAuthed(path: string, fallbackName: string) {
-  const res = await fetch(`${API}${path}`, { headers: authHeaders() });
+  let res: Response;
+  try {
+    res = await fetch(`${API}${path}`, { headers: authHeaders() });
+  } catch {
+    throw new Error(networkErrorMessage());
+  }
   if (!res.ok) throw new Error(await parseError(res));
   const blob = await res.blob();
   const disposition = res.headers.get("Content-Disposition") || "";
@@ -114,6 +133,25 @@ export const api = {
   ) => request<Match>(`/matches/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteMatch: (id: number) => request<void>(`/matches/${id}`, { method: "DELETE" }),
   getMatch: (id: number) => request<Match>(`/matches/${id}`),
+
+  getMatchEvents: (matchId: number) =>
+    request<MatchEvent[]>(`/matches/${matchId}/events`),
+  createMatchEvent: (
+    matchId: number,
+    data: {
+      half: 1 | 2;
+      minute: number;
+      event_type: MatchEventType;
+      team: MatchTeam;
+      player_id?: number | null;
+    },
+  ) =>
+    request<MatchEvent>(`/matches/${matchId}/events`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  deleteMatchEvent: (eventId: number) =>
+    request<void>(`/events/${eventId}`, { method: "DELETE" }),
 
   getCompositions: (matchId: number) =>
     request<Composition[]>(`/matches/${matchId}/compositions`),

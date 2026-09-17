@@ -11,36 +11,58 @@
   border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--shadow);
-  background: var(--green-deep);
-  aspect-ratio: 513 / 666;
+  background: #0f4d2c;
+  aspect-ratio: 3 / 4;
 }
 
-.pitch-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  user-select: none;
+.pitch-field {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px) 0 0 / 12.5% 100%,
+    linear-gradient(#1a6b3d, #0f4d2c 45%, #0a3a24);
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  box-sizing: border-box;
   pointer-events: none;
+}
+
+.pitch-field::before,
+.pitch-field::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.pitch-field::before {
+  top: 22%;
+}
+
+.pitch-field::after {
+  top: 50%;
 }
 
 .pitch-slot {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 15%;
-  min-width: 48px;
-  max-width: 68px;
-  aspect-ratio: 1;
+  width: 22%;
+  min-width: 72px;
+  max-width: 110px;
+  min-height: 42px;
+  height: auto;
+  aspect-ratio: auto;
   border: 1.5px dashed rgba(255, 255, 255, 0.55);
-  border-radius: 50%;
-  background: rgba(8, 42, 26, 0.45);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(8, 42, 26, 0.35);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 0;
-  padding: 4px;
+  padding: 0.45rem 0.4rem 0.4rem;
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   z-index: 2;
   color: white;
@@ -56,65 +78,60 @@ button.sub-slot {
 
 .pitch-slot.clickable:hover,
 .pitch-slot.clickable:focus-visible {
-  background: rgba(196, 92, 38, 0.72);
+  background: rgba(196, 92, 38, 0.75);
   border-color: rgba(255, 255, 255, 0.95);
   border-style: solid;
-  transform: translate(-50%, -50%) scale(1.08);
+  transform: translate(-50%, -50%) scale(1.04);
   z-index: 5;
   outline: none;
 }
 
 .pitch-slot.filled {
   border-style: solid;
-  border-color: rgba(232, 240, 234, 0.9);
-  background: linear-gradient(
-    160deg,
-    rgba(18, 78, 48, 0.92) 0%,
-    rgba(10, 48, 30, 0.94) 100%
-  );
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  color: #f4f7f5;
+  border-color: rgba(255, 255, 255, 0.85);
+  background: #f2efe6;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28);
+  color: #0d3b24;
+  min-height: 48px;
+  padding: 0.5rem 0.55rem 0.45rem;
 }
 
 .pitch-slot.filled:hover,
 .pitch-slot.filled:focus-visible {
-  background: linear-gradient(
-    160deg,
-    rgba(196, 92, 38, 0.95) 0%,
-    rgba(150, 60, 20, 0.95) 100%
-  );
-  border-color: #fff;
+  background: #fff8ef;
+  border-color: #c45c26;
 }
 
 .slot-pos {
   position: absolute;
   top: 3px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.58rem;
+  left: 5px;
+  transform: none;
+  font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.75);
   line-height: 1;
+  background: none;
+  padding: 0;
 }
 
 .pitch-slot.filled .slot-pos {
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 999px;
-  padding: 1px 5px;
-  top: 2px;
+  color: #0d3b24;
+  background: rgba(13, 59, 36, 0.1);
+  border-radius: 4px;
+  padding: 1px 4px;
+  top: 4px;
+  left: 5px;
 }
 
 .slot-label {
-  font-size: 0.55rem;
+  font-size: 0.62rem;
   text-align: center;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
   line-height: 1.15;
-  padding: 0 3px;
-  margin-top: 8px;
+  padding: 0 2px;
+  margin-top: 6px;
 }
 
 .slot-player {
@@ -122,31 +139,23 @@ button.sub-slot {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
+  gap: 0;
   width: 100%;
-  padding: 10px 2px 2px;
+  padding: 8px 2px 0;
   min-height: 0;
 }
 
-.slot-jersey {
-  font-size: 0.7rem;
-  font-weight: 800;
-  line-height: 1;
-  color: #e8a87c;
-}
-
 .slot-player-name {
-  font-size: 0.58rem;
+  font-size: 0.72rem;
   font-weight: 700;
   text-align: center;
-  line-height: 1.15;
+  line-height: 1.2;
   max-width: 100%;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   word-break: break-word;
-  hyphens: auto;
 }
 
 .saving-badge {
@@ -351,6 +360,18 @@ button.sub-slot {
 .slot-pick-info small {
   color: var(--muted);
   font-size: 0.78rem;
+}
+
+.player-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow: auto;
+}
+
+.player-modal-form .field {
+  flex: none;
+  min-width: 0;
 }
 
 @media (max-width: 800px) {

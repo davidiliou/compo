@@ -6,6 +6,8 @@ import MatchDetailPage from "./pages/MatchDetailPage";
 import ExportPage from "./pages/ExportPage";
 import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/LoginPage";
+import MatchLivePage from "./pages/MatchLivePage";
+import InstallBanner from "./components/InstallBanner";
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { username, loading } = useAuth();
@@ -60,6 +62,7 @@ function AppShell() {
             <Route path="/players" element={<PlayersPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/matches/:id" element={<MatchDetailPage />} />
+            <Route path="/matches/:id/live" element={<MatchLivePage />} />
             <Route
               path="/matches/:matchId/export/:compositionId"
               element={<ExportPage />}
@@ -68,6 +71,7 @@ function AppShell() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Protected>
+        <InstallBanner />
       </main>
     </div>
   );

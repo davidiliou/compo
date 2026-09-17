@@ -20,10 +20,13 @@ export default function PlayersPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [form, setForm] = useState(empty);
   const [positionsText, setPositionsText] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
   const [info, setInfo] = useState("");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -43,6 +46,15 @@ export default function PlayersPage() {
     load();
   }, []);
 
+  useEffect(() => {
+    if (!modalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeModal();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [modalOpen]);
+
   const parsePositionsInput = (raw: string): number[] => {
     const parts = raw.split(/[,;/|]+/).map((s) => s.trim()).filter(Boolean);
     const out: number[] = [];
@@ -53,32 +65,23 @@ export default function PlayersPage() {
     return out;
   };
 
-  const reset = () => {
+  const closeModal = () => {
+    setModalOpen(false);
+    setEditingId(null);
     setForm(empty);
     setPositionsText("");
+    setFormError("");
+  };
+
+  const openCreate = () => {
     setEditingId(null);
+    setForm(empty);
+    setPositionsText("");
+    setFormError("");
+    setModalOpen(true);
   };
 
-  const onSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    const payload = {
-      ...form,
-      positions: parsePositionsInput(positionsText),
-    };
-    try {
-      if (editingId) {
-        await api.updatePlayer(editingId, payload);
-      } else {
-        await api.createPlayer(payload);
-      }
-      reset();
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur");
-    }
-  };
-
-  const onEdit = (p: Player) => {
+  const openEdit = (p: Player) => {
     setEditingId(p.id);
     setForm({
       number: p.number,
@@ -88,6 +91,31 @@ export default function PlayersPage() {
       positions: p.positions || [],
     });
     setPositionsText((p.positions || []).join(", "));
+    setFormError("");
+    setModalOpen(true);
+  };
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    const payload = {
+      ...form,
+      positions: parsePositionsInput(positionsText),
+    };
+    setSaving(true);
+    setFormError("");
+    try {
+      if (editingId) {
+        await api.updatePlayer(editingId, payload);
+      } else {
+        await api.createPlayer(payload);
+      }
+      closeModal();
+      await load();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Erreur");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const onDelete = async (id: number) => {
@@ -134,7 +162,10 @@ export default function PlayersPage() {
       {info && <div className="success">{info}</div>}
 
       <div className="panel" style={{ marginBottom: "1.25rem" }}>
-        <div className="toolbar" style={{ marginBottom: "1rem" }}>
+        <div className="toolbar">
+          <button className="btn btn-primary" type="button" onClick={openCreate}>
+            Ajouter un joueur
+          </button>
           <input
             ref={fileRef}
             type="file"
@@ -150,84 +181,18 @@ export default function PlayersPage() {
           >
             {importing ? "Import…" : "Importer Excel"}
           </button>
-          <a
+          <button
             className="btn btn-ghost"
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
+            type="button"
+            onClick={() =>
               api.downloadPlayersTemplate().catch((err) =>
                 setError(err instanceof Error ? err.message : "Erreur modèle"),
-              );
-            }}
+              )
+            }
           >
             Télécharger le modèle
-          </a>
-          <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>
-            Colonnes : Nom, Prénom, Postes, Numéro de licence
-          </span>
-        </div>
-
-        <form className="toolbar" onSubmit={onSubmit}>
-          <div className="field" style={{ flex: "0 0 80px" }}>
-            <label htmlFor="number">N°</label>
-            <input
-              id="number"
-              type="number"
-              min={0}
-              max={99}
-              value={form.number}
-              onChange={(e) => setForm({ ...form, number: Number(e.target.value) })}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="last_name">Nom</label>
-            <input
-              id="last_name"
-              required
-              value={form.last_name}
-              onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="first_name">Prénom</label>
-            <input
-              id="first_name"
-              required
-              value={form.first_name}
-              onChange={(e) => setForm({ ...form, first_name: e.target.value })}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="positions">Postes (ex: 1, 3)</label>
-            <input
-              id="positions"
-              placeholder="1, 3, 8"
-              value={positionsText}
-              onChange={(e) => setPositionsText(e.target.value)}
-              title={Object.entries(POSITION_LABELS)
-                .filter(([k]) => Number(k) <= 15)
-                .map(([k, v]) => `${k}=${v}`)
-                .join(" · ")}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="license">N° licence</label>
-            <input
-              id="license"
-              required
-              value={form.license_number}
-              onChange={(e) => setForm({ ...form, license_number: e.target.value })}
-            />
-          </div>
-          <button className="btn btn-primary" type="submit">
-            {editingId ? "Enregistrer" : "Ajouter"}
           </button>
-          {editingId && (
-            <button className="btn btn-ghost" type="button" onClick={reset}>
-              Annuler
-            </button>
-          )}
-        </form>
+        </div>
       </div>
 
       <div className="panel">
@@ -263,7 +228,7 @@ export default function PlayersPage() {
                         <div className="row-actions">
                           <button
                             className="btn btn-ghost btn-sm"
-                            onClick={() => onEdit(p)}
+                            onClick={() => openEdit(p)}
                           >
                             Modifier
                           </button>
@@ -295,7 +260,7 @@ export default function PlayersPage() {
                     {p.license_number}
                   </p>
                   <div className="row-actions">
-                    <button className="btn btn-ghost btn-sm" onClick={() => onEdit(p)}>
+                    <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>
                       Modifier
                     </button>
                     <button
@@ -311,6 +276,100 @@ export default function PlayersPage() {
           </>
         )}
       </div>
+
+      {modalOpen && (
+        <div
+          className="slot-modal-backdrop"
+          role="presentation"
+          onClick={closeModal}
+        >
+          <div
+            className="slot-modal panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="player-modal-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="slot-modal-head">
+              <h2 id="player-modal-title">
+                {editingId ? "Modifier le joueur" : "Ajouter un joueur"}
+              </h2>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={closeModal}>
+                Fermer
+              </button>
+            </div>
+
+            {formError && <div className="error">{formError}</div>}
+
+            <form className="player-modal-form" onSubmit={onSubmit}>
+              <div className="field">
+                <label htmlFor="number">N° maillot</label>
+                <input
+                  id="number"
+                  type="number"
+                  min={0}
+                  max={99}
+                  value={form.number}
+                  onChange={(e) => setForm({ ...form, number: Number(e.target.value) })}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="last_name">Nom</label>
+                <input
+                  id="last_name"
+                  required
+                  value={form.last_name}
+                  onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="first_name">Prénom</label>
+                <input
+                  id="first_name"
+                  required
+                  value={form.first_name}
+                  onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="positions">Postes (ex: 1, 3)</label>
+                <input
+                  id="positions"
+                  placeholder="1, 3, 8"
+                  value={positionsText}
+                  onChange={(e) => setPositionsText(e.target.value)}
+                  title={Object.entries(POSITION_LABELS)
+                    .filter(([k]) => Number(k) <= 15)
+                    .map(([k, v]) => `${k}=${v}`)
+                    .join(" · ")}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="license">N° licence</label>
+                <input
+                  id="license"
+                  required
+                  value={form.license_number}
+                  onChange={(e) => setForm({ ...form, license_number: e.target.value })}
+                />
+              </div>
+              <div className="slot-modal-actions" style={{ marginTop: "0.5rem" }}>
+                <button className="btn btn-primary" type="submit" disabled={saving}>
+                  {saving ? "Enregistrement…" : editingId ? "Enregistrer" : "Ajouter"}
+                </button>
+                <button
+                  className="btn btn-ghost"
+                  type="button"
+                  onClick={closeModal}
+                  disabled={saving}
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -32,8 +32,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .me()
       .then((u: { username: string }) => setUsername(u.username))
       .catch(() => {
-        clearToken();
-        setUsername(null);
+        // 401 purge déjà le token dans api.ts ; une coupure réseau ne doit pas déconnecter
+        if (!getToken()) {
+          setUsername(null);
+        } else {
+          try {
+            const payload = JSON.parse(atob(token.split(".")[1] || ""));
+            if (typeof payload.sub === "string") setUsername(payload.sub);
+            else setUsername(null);
+          } catch {
+            setUsername(null);
+          }
+        }
       })
       .finally(() => setLoading(false));
   }, []);

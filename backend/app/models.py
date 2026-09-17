@@ -28,6 +28,7 @@ class Player(Base):
     positions: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
 
     slots: Mapped[list["CompositionSlot"]] = relationship(back_populates="player")
+    events: Mapped[list["MatchEvent"]] = relationship(back_populates="player")
 
 
 class Match(Base):
@@ -37,6 +38,9 @@ class Match(Base):
     opponent: Mapped[str] = mapped_column(String(150), nullable=False)
     match_date: Mapped[date] = mapped_column(Date, nullable=False)
     venue: Mapped[str] = mapped_column(String(150), default="Domicile")
+    # 7 / 12 / 15 (défaut XV)
+    team_size: Mapped[int] = mapped_column(Integer, nullable=False, default=15)
+    half_duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=35)
     score_home: Mapped[int | None] = mapped_column(Integer, nullable=True)
     score_away: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -44,6 +48,32 @@ class Match(Base):
     compositions: Mapped[list["Composition"]] = relationship(
         back_populates="match", cascade="all, delete-orphan"
     )
+    events: Mapped[list["MatchEvent"]] = relationship(
+        back_populates="match", cascade="all, delete-orphan"
+    )
+
+
+class MatchEvent(Base):
+    """Événement de score pendant un match (mode match)."""
+
+    __tablename__ = "match_events"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id", ondelete="CASCADE"))
+    half: Mapped[int] = mapped_column(Integer, nullable=False, default=1)  # 1 ou 2
+    minute: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # essai | transformation | penalite | drop
+    event_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    # home = nous, away = adversaire
+    team: Mapped[str] = mapped_column(String(10), nullable=False, default="home")
+    player_id: Mapped[int | None] = mapped_column(
+        ForeignKey("players.id", ondelete="SET NULL"), nullable=True
+    )
+    points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    match: Mapped["Match"] = relationship(back_populates="events")
+    player: Mapped["Player | None"] = relationship(back_populates="events")
 
 
 class Composition(Base):

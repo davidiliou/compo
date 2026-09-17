@@ -1,12 +1,15 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api";
-import type { Match } from "../types";
+import type { Match, TeamSize } from "../types";
+import { MATCH_FORMATS, TEAM_SIZE_OPTIONS, getMatchFormat, normalizeTeamSize } from "../types";
 
 const empty = {
   opponent: "",
   match_date: new Date().toISOString().slice(0, 10),
   venue: "Domicile",
+  team_size: 15 as TeamSize,
+  half_duration_minutes: 35,
   score_home: null as number | null,
   score_away: null as number | null,
 };
@@ -41,8 +44,22 @@ export default function MatchesPage() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (editingId) {
+      const current = matches.find((m) => m.id === editingId);
+      if (
+        current &&
+        normalizeTeamSize(current.team_size) !== form.team_size &&
+        current.compositions_count > 0
+      ) {
+        const ok = confirm(
+          "Changer le type de match recalcule les postes des compositions (les joueurs hors format sont retirés). Continuer ?",
+        );
+        if (!ok) return;
+      }
+    }
     const payload = {
       ...form,
+      team_size: normalizeTeamSize(form.team_size),
       score_home:
         form.score_home === null || Number.isNaN(form.score_home as number)
           ? null
@@ -71,6 +88,8 @@ export default function MatchesPage() {
       opponent: m.opponent,
       match_date: m.match_date,
       venue: m.venue,
+      team_size: normalizeTeamSize(m.team_size),
+      half_duration_minutes: m.half_duration_minutes || 35,
       score_home: m.score_home,
       score_away: m.score_away,
     });
@@ -88,7 +107,10 @@ export default function MatchesPage() {
 
   const actions = (m: Match) => (
     <div className="row-actions">
-      <Link className="btn btn-accent btn-sm" to={`/matches/${m.id}`}>
+      <Link className="btn btn-accent btn-sm" to={`/matches/${m.id}/live`}>
+        Mode match
+      </Link>
+      <Link className="btn btn-primary btn-sm" to={`/matches/${m.id}`}>
         Compositions
       </Link>
       <button className="btn btn-ghost btn-sm" onClick={() => onEdit(m)}>
@@ -104,7 +126,7 @@ export default function MatchesPage() {
     <div>
       <h1 className="page-title">Matchs</h1>
       <p className="page-sub">
-        Créez les rencontres, saisissez les scores, puis composez le XV.
+        Créez les rencontres (XV, XII ou VII), saisissez les scores, puis composez.
       </p>
 
       {error && <div className="error">{error}</div>}
@@ -139,6 +161,25 @@ export default function MatchesPage() {
             >
               <option>Domicile</option>
               <option>Extérieur</option>
+            </select>
+          </div>
+          <div className="field field-sm">
+            <label htmlFor="team_size">Type</label>
+            <select
+              id="team_size"
+              value={form.team_size}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  team_size: normalizeTeamSize(Number(e.target.value)),
+                })
+              }
+            >
+              {TEAM_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>
+                  {MATCH_FORMATS[size].label}
+                </option>
+              ))}
             </select>
           </div>
           <div className="field field-xs">
@@ -195,6 +236,7 @@ export default function MatchesPage() {
                   <tr>
                     <th>Date</th>
                     <th>Adversaire</th>
+                    <th>Type</th>
                     <th>Lieu</th>
                     <th>Score</th>
                     <th>Compos</th>
@@ -210,6 +252,7 @@ export default function MatchesPage() {
                           vs {m.opponent}
                         </Link>
                       </td>
+                      <td>{getMatchFormat(m.team_size).shortLabel}</td>
                       <td>{m.venue}</td>
                       <td className="score">
                         {m.score_home ?? "—"} – {m.score_away ?? "—"}
@@ -234,7 +277,8 @@ export default function MatchesPage() {
                     </span>
                   </div>
                   <p className="data-card-meta">
-                    {new Date(m.match_date).toLocaleDateString("fr-FR")} · {m.venue} ·{" "}
+                    {new Date(m.match_date).toLocaleDateString("fr-FR")} ·{" "}
+                    {getMatchFormat(m.team_size).shortLabel} · {m.venue} ·{" "}
                     {m.compositions_count} compo
                     {m.compositions_count > 1 ? "s" : ""}
                   </p>

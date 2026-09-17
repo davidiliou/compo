@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import CompositionBoard from "../components/CompositionBoard";
 import type { Composition, Match, Player } from "../types";
+import { getMatchFormat, normalizeTeamSize } from "../types";
 
 export default function MatchDetailPage() {
   const { id } = useParams();
@@ -29,6 +30,7 @@ export default function MatchDetailPage() {
       setMatch(m);
       setCompositions(comps);
       setPlayers(pls);
+      setNewName(getMatchFormat(m.team_size).defaultCompoName);
       setActiveId((prev) => {
         if (prev && comps.some((c) => c.id === prev)) return prev;
         return comps[0]?.id ?? null;
@@ -53,9 +55,9 @@ export default function MatchDetailPage() {
     try {
       const created = await api.createComposition(
         matchId,
-        newName.trim() || "Composition",
+        newName.trim() || getMatchFormat(match?.team_size).defaultCompoName,
       );
-      setNewName("XV de départ");
+      setNewName(getMatchFormat(match?.team_size).defaultCompoName);
       await load();
       setActiveId(created.id);
     } catch (err) {
@@ -105,6 +107,8 @@ export default function MatchDetailPage() {
   if (loading) return <p className="empty">Chargement…</p>;
   if (!match) return <p className="empty">Match introuvable.</p>;
 
+  const format = getMatchFormat(normalizeTeamSize(match.team_size));
+
   return (
     <div>
       <p style={{ marginBottom: "0.5rem" }}>
@@ -115,10 +119,21 @@ export default function MatchDetailPage() {
       <h1 className="page-title">vs {match.opponent}</h1>
       <p className="page-sub">
         {new Date(match.match_date).toLocaleDateString("fr-FR")} · {match.venue} ·{" "}
+        {format.label} ·{" "}
         <span className="score">
           {match.score_home ?? "—"} – {match.score_away ?? "—"}
         </span>
       </p>
+
+      <div className="row-actions" style={{ marginBottom: "1rem" }}>
+        <button
+          type="button"
+          className="btn btn-accent"
+          onClick={() => navigate(`/matches/${matchId}/live`)}
+        >
+          Mode match
+        </button>
+      </div>
 
       {error && <div className="error">{error}</div>}
 
@@ -130,7 +145,7 @@ export default function MatchDetailPage() {
               id="compo-name"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="XV de départ, Remplaçants…"
+              placeholder={format.defaultCompoName}
             />
           </div>
           <button className="btn btn-primary" type="submit">
@@ -199,6 +214,7 @@ export default function MatchDetailPage() {
         <CompositionBoard
           composition={active}
           players={players}
+          teamSize={format.teamSize}
           onChange={onSlotsChange}
           saving={saving}
         />

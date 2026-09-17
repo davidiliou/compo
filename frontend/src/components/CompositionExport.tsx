@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import type { Composition, Match } from "../types";
+import type { Composition, Match, MatchFormat, TeamSize } from "../types";
 import {
-  POSITION_LABELS,
-  POSITION_LAYOUT,
-  STARTER_POSITIONS,
-  SUB_POSITIONS,
+  getMatchFormat,
+  normalizeTeamSize,
+  positionLabel,
+  starterPositions,
+  subPositions,
   playerDisplayName,
   playerShortName,
 } from "../types";
@@ -16,11 +17,66 @@ interface Props {
   onClose?: () => void;
 }
 
+/** Layouts aérés pour l’export / PDF (évite les chevauchements) */
+const EXPORT_LAYOUTS: Record<TeamSize, Record<number, { top: string; left: string }>> = {
+  15: {
+    1: { top: "7%", left: "20%" },
+    2: { top: "7%", left: "50%" },
+    3: { top: "7%", left: "80%" },
+    4: { top: "20%", left: "34%" },
+    5: { top: "20%", left: "66%" },
+    6: { top: "33%", left: "20%" },
+    7: { top: "33%", left: "80%" },
+    8: { top: "33%", left: "50%" },
+    9: { top: "48%", left: "36%" },
+    10: { top: "48%", left: "64%" },
+    11: { top: "64%", left: "14%" },
+    12: { top: "62%", left: "36%" },
+    13: { top: "62%", left: "64%" },
+    14: { top: "64%", left: "86%" },
+    15: { top: "82%", left: "50%" },
+  },
+  12: {
+    1: { top: "8%", left: "22%" },
+    2: { top: "8%", left: "50%" },
+    3: { top: "8%", left: "78%" },
+    4: { top: "22%", left: "34%" },
+    5: { top: "22%", left: "66%" },
+    6: { top: "36%", left: "28%" },
+    7: { top: "36%", left: "72%" },
+    8: { top: "50%", left: "36%" },
+    9: { top: "50%", left: "64%" },
+    10: { top: "66%", left: "22%" },
+    11: { top: "66%", left: "50%" },
+    12: { top: "84%", left: "50%" },
+  },
+  7: {
+    1: { top: "12%", left: "26%" },
+    2: { top: "12%", left: "50%" },
+    3: { top: "12%", left: "74%" },
+    4: { top: "38%", left: "34%" },
+    5: { top: "38%", left: "66%" },
+    6: { top: "60%", left: "50%" },
+    7: { top: "82%", left: "50%" },
+  },
+};
+
+function exportLayout(format: MatchFormat, pos: number) {
+  return EXPORT_LAYOUTS[format.teamSize][pos] ?? format.layout[pos];
+}
+
 export default function CompositionExport({
   match,
   composition,
   onClose,
 }: Props) {
+  const format = useMemo(
+    () => getMatchFormat(normalizeTeamSize(match.team_size)),
+    [match.team_size],
+  );
+  const starters = useMemo(() => starterPositions(format), [format]);
+  const subs = useMemo(() => subPositions(format), [format]);
+
   const byPos = useMemo(() => {
     const map = new Map<number, Composition["slots"][0]>();
     for (const s of composition.slots) map.set(s.position, s);
@@ -28,20 +84,23 @@ export default function CompositionExport({
   }, [composition.slots]);
 
   const rows = useMemo(() => {
-    return [...STARTER_POSITIONS, ...SUB_POSITIONS]
+    return [...starters, ...subs]
       .map((pos) => {
         const slot = byPos.get(pos);
         const player = slot?.player ?? null;
         return {
           position: pos,
-          role: pos <= 15 ? POSITION_LABELS[pos] : `Remplaçant ${pos}`,
+          role:
+            pos <= format.starters
+              ? positionLabel(format, pos)
+              : `Remplaçant ${pos}`,
           name: player ? playerDisplayName(player) : "—",
           license: player?.license_number ?? "—",
           filled: !!player,
         };
       })
       .filter((r) => r.filled);
-  }, [byPos]);
+  }, [byPos, starters, subs, format]);
 
   const dateLabel = new Date(match.match_date).toLocaleDateString("fr-FR", {
     weekday: "long",
@@ -72,7 +131,8 @@ export default function CompositionExport({
           <p className="export-brand">Compo Rugby</p>
           <h1>{composition.name}</h1>
           <p className="export-meta">
-            vs <strong>{match.opponent}</strong> · {dateLabel} · {match.venue}
+            vs <strong>{match.opponent}</strong> · {dateLabel} · {match.venue} ·{" "}
+            {format.shortLabel}
             {(match.score_home != null || match.score_away != null) && (
               <>
                 {" "}
@@ -83,12 +143,11 @@ export default function CompositionExport({
         </header>
 
         <section className="export-pitch-section">
-          <h2>XV de départ</h2>
-          <div className="export-pitch">
-            <img src="/pitch.png" alt="" className="export-pitch-img" />
-            {STARTER_POSITIONS.map((pos) => {
+          <h2>{format.defaultCompoName.replace(" de départ", "")} de départ</h2>
+          <div className={`export-pitch export-pitch-${format.teamSize}`}>
+            {starters.map((pos) => {
               const player = byPos.get(pos)?.player ?? null;
-              const layout = POSITION_LAYOUT[pos];
+              const layout = exportLayout(format, pos);
               return (
                 <div
                   key={pos}
@@ -97,7 +156,9 @@ export default function CompositionExport({
                 >
                   <span className="export-slot-pos">{pos}</span>
                   {player ? (
-                    <span className="export-slot-name">{playerShortName(player)}</span>
+                    <span className="export-slot-name">
+                      {playerShortName(player)}
+                    </span>
                   ) : (
                     <span className="export-slot-empty">—</span>
                   )}
@@ -110,7 +171,7 @@ export default function CompositionExport({
         <section className="export-subs-section">
           <h2>Remplaçants</h2>
           <div className="export-subs">
-            {SUB_POSITIONS.map((pos) => {
+            {subs.map((pos) => {
               const player = byPos.get(pos)?.player ?? null;
               return (
                 <div key={pos} className={`export-sub ${player ? "filled" : ""}`}>

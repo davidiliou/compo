@@ -5,8 +5,10 @@ Application client-serveur pour gérer les compositions d'équipe au rugby (XV).
 ## Fonctionnalités
 
 - **Joueurs** : CRUD (n°, prénom, n° de licence)
-- **Matchs** : CRUD avec adversaire, date, lieu, scores
-- **Compositions** : plusieurs compos par match, placement des 15 postes en glisser-déposer sur un terrain
+- **Matchs** : CRUD avec adversaire, date, lieu, scores, type (XV / XII / VII)
+- **Mode match** : chrono par mi-temps (35 min par défaut), vibration/sonnerie, événements de score (essai, transformation, pénalité, drop) avec joueur et minute
+- **Compositions** : plusieurs compos par match selon le format (15+8, 12+8 ou 7+5)
+- **PWA** : installable sur Android (Chrome → « Installer l’appli » / bannière)
 
 ## Démarrage local (Docker)
 
@@ -57,4 +59,12 @@ Si le nom de service API change, mettez à jour `VITE_API_URL` sur `compo-web` p
 1. Ajoutez des joueurs dans **Joueurs**
 2. Créez un match dans **Matchs**
 3. Ouvrez le match → **Ajouter une compo**
-4. Glissez les joueurs du banc vers les cases du terrain
+4. Cliquez une case du terrain pour assigner un joueur
+
+## Installer sur Android (PWA)
+
+1. Ouvrez l’URL du site dans **Chrome** (HTTPS, ex. Render)
+2. Bannière **Installer** dans l’app, ou menu Chrome → **Installer l’application** / **Ajouter à l’écran d’accueil**
+3. L’icône Compo apparaît comme une appli (plein écran, sans barre d’adresse)
+
+En local (`http://localhost:3080`), Chrome peut aussi proposer l’installation. Sur iOS : Safari → Partager → Sur l’écran d’accueil.
