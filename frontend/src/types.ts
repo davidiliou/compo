@@ -31,6 +31,10 @@ export interface Match {
   score_away: number | null;
   created_at: string;
   compositions_count: number;
+  clock_half: 1 | 2;
+  clock_remaining_ms: number;
+  clock_running: boolean;
+  clock_started_at: string | null;
 }
 
 export type MatchEventType = "essai" | "transformation" | "penalite" | "drop";

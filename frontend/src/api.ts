@@ -139,14 +139,48 @@ export const api = {
     downloadAuthed("/players/template.xlsx", "modele_joueurs.xlsx"),
 
   getMatches: () => request<Match[]>("/matches"),
-  createMatch: (data: Omit<Match, "id" | "created_at" | "compositions_count">) =>
+  createMatch: (
+    data: Omit<
+      Match,
+      | "id"
+      | "created_at"
+      | "compositions_count"
+      | "clock_half"
+      | "clock_remaining_ms"
+      | "clock_running"
+      | "clock_started_at"
+    >,
+  ) =>
     request<Match>("/matches", { method: "POST", body: JSON.stringify(data) }),
   updateMatch: (
     id: number,
-    data: Partial<Omit<Match, "id" | "created_at" | "compositions_count">>,
+    data: Partial<
+      Omit<
+        Match,
+        | "id"
+        | "created_at"
+        | "compositions_count"
+        | "clock_half"
+        | "clock_remaining_ms"
+        | "clock_running"
+        | "clock_started_at"
+      >
+    >,
   ) => request<Match>(`/matches/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteMatch: (id: number) => request<void>(`/matches/${id}`, { method: "DELETE" }),
   getMatch: (id: number) => request<Match>(`/matches/${id}`),
+  updateMatchClock: (
+    id: number,
+    data: {
+      clock_half: 1 | 2;
+      clock_remaining_ms: number;
+      clock_running: boolean;
+    },
+  ) =>
+    request<Match>(`/matches/${id}/clock`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
 
   getMatchEvents: (matchId: number) =>
     request<MatchEvent[]>(`/matches/${matchId}/events`),

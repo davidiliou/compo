@@ -43,6 +43,11 @@ class Match(Base):
     half_duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=35)
     score_home: Mapped[int | None] = mapped_column(Integer, nullable=True)
     score_away: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Chrono mode match (partagé avec les visiteurs)
+    clock_half: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    clock_remaining_ms: Mapped[int] = mapped_column(Integer, nullable=False, default=35 * 60_000)
+    clock_running: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    clock_started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     compositions: Mapped[list["Composition"]] = relationship(

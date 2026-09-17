@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
+import { computeRemainingMs, formatClock, parseUtcMs } from "../clock";
 import type { Match, MatchEvent, MatchEventType, MatchTeam, Player } from "../types";
 import {
   EVENT_TYPE_LABELS,
@@ -9,48 +10,6 @@ import {
   playerShortName,
 } from "../types";
 import "./MatchLivePage.css";
-
-type TimerPersist = {
-  half: 1 | 2;
-  remainingMs: number;
-  running: boolean;
-  startedAt: number | null;
-  durationMin: number;
-};
-
-function storageKey(matchId: number) {
-  return `compo-live-timer-${matchId}`;
-}
-
-function loadTimer(matchId: number, defaultMin: number): TimerPersist {
-  try {
-    const raw = localStorage.getItem(storageKey(matchId));
-    if (raw) {
-      const parsed = JSON.parse(raw) as TimerPersist;
-      if (parsed && typeof parsed.remainingMs === "number") return parsed;
-    }
-  } catch {
-    /* ignore */
-  }
-  return {
-    half: 1,
-    remainingMs: defaultMin * 60_000,
-    running: false,
-    startedAt: null,
-    durationMin: defaultMin,
-  };
-}
-
-function saveTimer(matchId: number, state: TimerPersist) {
-  localStorage.setItem(storageKey(matchId), JSON.stringify(state));
-}
-
-function formatClock(ms: number): string {
-  const total = Math.max(0, Math.ceil(ms / 1000));
-  const m = Math.floor(total / 60);
-  const s = total % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-}
 
 function elapsedMinute(durationMin: number, remainingMs: number): number {
   const elapsedSec = durationMin * 60 - Math.ceil(remainingMs / 1000);
@@ -127,26 +86,34 @@ export default function MatchLivePage() {
       setEvents(evs);
       setPlayers(pls);
       const dur = m.half_duration_minutes || 35;
-      const persisted = loadTimer(matchId, dur);
-      setDurationMin(persisted.durationMin || dur);
-      setHalf(persisted.half);
-      if (persisted.running && persisted.startedAt) {
-        const elapsed = Date.now() - persisted.startedAt;
-        const left = Math.max(0, persisted.remainingMs - elapsed);
-        setRemainingMs(left);
-        remainingAtStartRef.current = left;
-        if (left > 0) {
-          startedAtRef.current = Date.now();
-          setRunning(true);
-        } else {
-          setRunning(false);
-          startedAtRef.current = null;
-        }
-      } else {
-        setRemainingMs(persisted.remainingMs);
-        remainingAtStartRef.current = persisted.remainingMs;
-        setRunning(false);
+      setDurationMin(dur);
+      const halfVal = m.clock_half === 2 ? 2 : 1;
+      setHalf(halfVal);
+
+      const left = computeRemainingMs(m);
+      setRemainingMs(left);
+
+      if (m.clock_running && m.clock_started_at && left > 0) {
+        // Reprendre exactement l’instant de départ serveur (pas de rebase)
+        const started = parseUtcMs(m.clock_started_at) ?? Date.now();
+        remainingAtStartRef.current = m.clock_remaining_ms ?? dur * 60_000;
+        startedAtRef.current = started;
+        setRunning(true);
+        endedRef.current = false;
+      } else if (m.clock_running && left <= 0) {
+        remainingAtStartRef.current = 0;
         startedAtRef.current = null;
+        setRunning(false);
+        endedRef.current = true;
+        void api.updateMatchClock(matchId, {
+          clock_half: halfVal,
+          clock_remaining_ms: 0,
+          clock_running: false,
+        });
+      } else {
+        remainingAtStartRef.current = left;
+        startedAtRef.current = null;
+        setRunning(false);
       }
       setError("");
     } catch (e) {
@@ -155,6 +122,36 @@ export default function MatchLivePage() {
       setLoading(false);
     }
   }, [matchId]);
+
+  const syncClock = useCallback(
+    async (next: {
+      half: 1 | 2;
+      remainingMs: number;
+      running: boolean;
+    }) => {
+      try {
+        const updated = await api.updateMatchClock(matchId, {
+          clock_half: next.half,
+          clock_remaining_ms: Math.max(0, Math.round(next.remainingMs)),
+          clock_running: next.running,
+        });
+        setMatch(updated);
+        // Aligner les refs sur la réponse serveur (started_at UTC)
+        if (updated.clock_running && updated.clock_started_at) {
+          const started = parseUtcMs(updated.clock_started_at);
+          if (started != null) {
+            remainingAtStartRef.current = updated.clock_remaining_ms;
+            startedAtRef.current = started;
+          }
+        }
+        return updated;
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Erreur sync chrono");
+        return null;
+      }
+    },
+    [matchId],
+  );
 
   useEffect(() => {
     if (!Number.isFinite(matchId)) return;
@@ -172,6 +169,7 @@ export default function MatchLivePage() {
       if (left <= 0) {
         setRunning(false);
         startedAtRef.current = null;
+        void syncClock({ half, remainingMs: 0, running: false });
         if (!endedRef.current) {
           endedRef.current = true;
           playEndSignal();
@@ -181,23 +179,7 @@ export default function MatchLivePage() {
     tick();
     const id = window.setInterval(tick, 200);
     return () => window.clearInterval(id);
-  }, [running]);
-
-  // Persist timer (rebase startedAt pour éviter le double comptage)
-  useEffect(() => {
-    if (!Number.isFinite(matchId) || loading) return;
-    const currentLeft =
-      running && startedAtRef.current != null
-        ? Math.max(0, remainingAtStartRef.current - (Date.now() - startedAtRef.current))
-        : remainingMs;
-    saveTimer(matchId, {
-      half,
-      remainingMs: currentLeft,
-      running,
-      startedAt: running ? Date.now() : null,
-      durationMin,
-    });
-  }, [matchId, half, remainingMs, running, durationMin, loading]);
+  }, [running, half, syncClock]);
 
   const clockLabel = formatClock(remainingMs);
   const progress = useMemo(() => {
@@ -205,7 +187,7 @@ export default function MatchLivePage() {
     return total <= 0 ? 0 : Math.min(1, 1 - remainingMs / total);
   }, [durationMin, remainingMs]);
 
-  const startPause = () => {
+  const startPause = async () => {
     if (running) {
       const start = startedAtRef.current;
       const left =
@@ -216,13 +198,20 @@ export default function MatchLivePage() {
       remainingAtStartRef.current = left;
       startedAtRef.current = null;
       setRunning(false);
+      await syncClock({ half, remainingMs: left, running: false });
       return;
     }
     if (remainingMs <= 0) return;
     endedRef.current = false;
-    remainingAtStartRef.current = remainingMs;
+    const base = remainingMs;
+    remainingAtStartRef.current = base;
     startedAtRef.current = Date.now();
     setRunning(true);
+    const updated = await syncClock({ half, remainingMs: base, running: true });
+    if (!updated) {
+      // Sync échouée : on garde le chrono local quand même
+      return;
+    }
   };
 
   const resetHalf = () => {
@@ -232,6 +221,7 @@ export default function MatchLivePage() {
     const ms = durationMin * 60_000;
     remainingAtStartRef.current = ms;
     setRemainingMs(ms);
+    void syncClock({ half, remainingMs: ms, running: false });
   };
 
   const changeHalf = (next: 1 | 2) => {
@@ -243,6 +233,7 @@ export default function MatchLivePage() {
     const ms = durationMin * 60_000;
     remainingAtStartRef.current = ms;
     setRemainingMs(ms);
+    void syncClock({ half: next, remainingMs: ms, running: false });
   };
 
   const applyDuration = async (minutes: number) => {
@@ -258,6 +249,7 @@ export default function MatchLivePage() {
     try {
       const updated = await api.updateMatch(match.id, { half_duration_minutes: mins });
       setMatch(updated);
+      await syncClock({ half, remainingMs: ms, running: false });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur durée");
     }

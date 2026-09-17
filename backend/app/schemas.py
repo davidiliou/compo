@@ -106,8 +106,20 @@ class MatchOut(MatchBase):
     id: int
     created_at: datetime
     compositions_count: int = 0
+    clock_half: int = 1
+    clock_remaining_ms: int = 35 * 60_000
+    clock_running: bool = False
+    clock_started_at: datetime | None = None
 
     model_config = {"from_attributes": True}
+
+
+class MatchClockUpdate(BaseModel):
+    clock_half: int = Field(..., ge=1, le=2)
+    clock_remaining_ms: int = Field(..., ge=0)
+    clock_running: bool
+    # Si running=True, le serveur pose clock_started_at = maintenant
+    # Si running=False, clock_started_at est effacé
 
 
 EVENT_POINTS = {
