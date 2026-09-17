@@ -45,9 +45,9 @@ function AppShell() {
           <NavLink to="/settings">Paramètres</NavLink>
           {username && (
             <span className="user-chip">
-              {username}
+              <span className="user-name">{username}</span>
               <button type="button" className="btn btn-ghost btn-sm" onClick={logout}>
-                Déconnexion
+                Quitter
               </button>
             </span>
           )}

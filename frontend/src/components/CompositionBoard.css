@@ -280,7 +280,15 @@
   }
 
   .pitch-wrap {
-    max-width: 420px;
+    max-width: min(420px, 100%);
     margin: 0 auto;
+  }
+
+  .bench-panel {
+    min-height: 0;
+  }
+
+  .subs-grid {
+    grid-template-columns: 1fr;
   }
 }

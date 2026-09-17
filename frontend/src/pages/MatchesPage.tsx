@@ -43,12 +43,14 @@ export default function MatchesPage() {
     e.preventDefault();
     const payload = {
       ...form,
-      score_home: form.score_home === null || Number.isNaN(form.score_home as number)
-        ? null
-        : Number(form.score_home),
-      score_away: form.score_away === null || Number.isNaN(form.score_away as number)
-        ? null
-        : Number(form.score_away),
+      score_home:
+        form.score_home === null || Number.isNaN(form.score_home as number)
+          ? null
+          : Number(form.score_home),
+      score_away:
+        form.score_away === null || Number.isNaN(form.score_away as number)
+          ? null
+          : Number(form.score_away),
     };
     try {
       if (editingId) {
@@ -84,10 +86,26 @@ export default function MatchesPage() {
     }
   };
 
+  const actions = (m: Match) => (
+    <div className="row-actions">
+      <Link className="btn btn-accent btn-sm" to={`/matches/${m.id}`}>
+        Compositions
+      </Link>
+      <button className="btn btn-ghost btn-sm" onClick={() => onEdit(m)}>
+        Modifier
+      </button>
+      <button className="btn btn-danger btn-sm" onClick={() => onDelete(m.id)}>
+        Supprimer
+      </button>
+    </div>
+  );
+
   return (
     <div>
       <h1 className="page-title">Matchs</h1>
-      <p className="page-sub">Créez les rencontres, saisissez les scores, puis composez le XV.</p>
+      <p className="page-sub">
+        Créez les rencontres, saisissez les scores, puis composez le XV.
+      </p>
 
       {error && <div className="error">{error}</div>}
 
@@ -102,7 +120,7 @@ export default function MatchesPage() {
               onChange={(e) => setForm({ ...form, opponent: e.target.value })}
             />
           </div>
-          <div className="field" style={{ flex: "0 0 160px" }}>
+          <div className="field field-sm">
             <label htmlFor="date">Date</label>
             <input
               id="date"
@@ -112,7 +130,7 @@ export default function MatchesPage() {
               onChange={(e) => setForm({ ...form, match_date: e.target.value })}
             />
           </div>
-          <div className="field" style={{ flex: "0 0 140px" }}>
+          <div className="field field-sm">
             <label htmlFor="venue">Lieu</label>
             <select
               id="venue"
@@ -123,7 +141,7 @@ export default function MatchesPage() {
               <option>Extérieur</option>
             </select>
           </div>
-          <div className="field" style={{ flex: "0 0 90px" }}>
+          <div className="field field-xs">
             <label htmlFor="sh">Score nous</label>
             <input
               id="sh"
@@ -138,7 +156,7 @@ export default function MatchesPage() {
               }
             />
           </div>
-          <div className="field" style={{ flex: "0 0 90px" }}>
+          <div className="field field-xs">
             <label htmlFor="sa">Score eux</label>
             <input
               id="sa"
@@ -170,51 +188,61 @@ export default function MatchesPage() {
         ) : matches.length === 0 ? (
           <p className="empty">Aucun match pour le moment.</p>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Adversaire</th>
-                <th>Lieu</th>
-                <th>Score</th>
-                <th>Compos</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            <div className="table-desktop">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Adversaire</th>
+                    <th>Lieu</th>
+                    <th>Score</th>
+                    <th>Compos</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matches.map((m) => (
+                    <tr key={m.id}>
+                      <td>{new Date(m.match_date).toLocaleDateString("fr-FR")}</td>
+                      <td>
+                        <Link className="linkish" to={`/matches/${m.id}`}>
+                          vs {m.opponent}
+                        </Link>
+                      </td>
+                      <td>{m.venue}</td>
+                      <td className="score">
+                        {m.score_home ?? "—"} – {m.score_away ?? "—"}
+                      </td>
+                      <td>{m.compositions_count}</td>
+                      <td>{actions(m)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="card-list">
               {matches.map((m) => (
-                <tr key={m.id}>
-                  <td>{new Date(m.match_date).toLocaleDateString("fr-FR")}</td>
-                  <td>
+                <article key={m.id} className="data-card">
+                  <div className="data-card-head">
                     <Link className="linkish" to={`/matches/${m.id}`}>
                       vs {m.opponent}
                     </Link>
-                  </td>
-                  <td>{m.venue}</td>
-                  <td className="score">
-                    {m.score_home ?? "—"} – {m.score_away ?? "—"}
-                  </td>
-                  <td>{m.compositions_count}</td>
-                  <td>
-                    <div className="row-actions">
-                      <Link className="btn btn-accent btn-sm" to={`/matches/${m.id}`}>
-                        Compositions
-                      </Link>
-                      <button className="btn btn-ghost btn-sm" onClick={() => onEdit(m)}>
-                        Modifier
-                      </button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => onDelete(m.id)}
-                      >
-                        Supprimer
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                    <span className="score">
+                      {m.score_home ?? "—"} – {m.score_away ?? "—"}
+                    </span>
+                  </div>
+                  <p className="data-card-meta">
+                    {new Date(m.match_date).toLocaleDateString("fr-FR")} · {m.venue} ·{" "}
+                    {m.compositions_count} compo
+                    {m.compositions_count > 1 ? "s" : ""}
+                  </p>
+                  {actions(m)}
+                </article>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
     </div>

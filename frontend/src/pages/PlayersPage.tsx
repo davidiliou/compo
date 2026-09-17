@@ -236,44 +236,79 @@ export default function PlayersPage() {
         ) : players.length === 0 ? (
           <p className="empty">Aucun joueur pour le moment.</p>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>N°</th>
-                <th>Nom</th>
-                <th>Prénom</th>
-                <th>Postes</th>
-                <th>Licence</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            <div className="table-desktop">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>N°</th>
+                    <th>Nom</th>
+                    <th>Prénom</th>
+                    <th>Postes</th>
+                    <th>Licence</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {players.map((p) => (
+                    <tr key={p.id}>
+                      <td>
+                        <strong>{p.number || "—"}</strong>
+                      </td>
+                      <td>{p.last_name || "—"}</td>
+                      <td>{p.first_name}</td>
+                      <td>{formatPositions(p.positions || [])}</td>
+                      <td>{p.license_number}</td>
+                      <td>
+                        <div className="row-actions">
+                          <button
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => onEdit(p)}
+                          >
+                            Modifier
+                          </button>
+                          <button
+                            className="btn btn-danger btn-sm"
+                            onClick={() => onDelete(p.id)}
+                          >
+                            Supprimer
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="card-list">
               {players.map((p) => (
-                <tr key={p.id}>
-                  <td>
-                    <strong>{p.number || "—"}</strong>
-                  </td>
-                  <td>{p.last_name || "—"}</td>
-                  <td>{p.first_name}</td>
-                  <td>{formatPositions(p.positions || [])}</td>
-                  <td>{p.license_number}</td>
-                  <td>
-                    <div className="row-actions">
-                      <button className="btn btn-ghost btn-sm" onClick={() => onEdit(p)}>
-                        Modifier
-                      </button>
-                      <button
-                        className="btn btn-danger btn-sm"
-                        onClick={() => onDelete(p.id)}
-                      >
-                        Supprimer
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <article key={p.id} className="data-card">
+                  <div className="data-card-head">
+                    <strong>
+                      {p.number ? `#${p.number} ` : ""}
+                      {p.first_name} {p.last_name}
+                    </strong>
+                  </div>
+                  <p className="data-card-meta">
+                    Postes : {formatPositions(p.positions || [])} · Licence{" "}
+                    {p.license_number}
+                  </p>
+                  <div className="row-actions">
+                    <button className="btn btn-ghost btn-sm" onClick={() => onEdit(p)}>
+                      Modifier
+                    </button>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => onDelete(p.id)}
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </article>
               ))}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
     </div>
