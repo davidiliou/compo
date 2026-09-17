@@ -96,7 +96,15 @@ export default function VisitorMatchPage() {
                 <p className="page-sub" style={{ marginTop: 0 }}>
                   {active.name}
                 </p>
-                <PublicPitchView composition={active} teamSize={format.teamSize} />
+                {active.slots.every((s) => !s.player_id) ? (
+                  <p className="empty">
+                    Composition publiée, mais aucun joueur n’y est encore placé.
+                    En admin : ouvrez ce match, placez les joueurs, puis
+                    vérifiez que c’est bien cette feuille qui est « public ».
+                  </p>
+                ) : (
+                  <PublicPitchView composition={active} teamSize={format.teamSize} />
+                )}
               </>
             )}
           </>

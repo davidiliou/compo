@@ -106,9 +106,19 @@ export default function MatchDetailPage() {
 
   const togglePublic = async () => {
     if (!active) return;
+    const next = !active.is_public;
+    if (next) {
+      const filled = active.slots.filter((s) => s.player_id).length;
+      if (filled === 0) {
+        const ok = confirm(
+          "Cette composition n’a encore aucun joueur placé. La publier quand même ? Les visiteurs verront une feuille vide.",
+        );
+        if (!ok) return;
+      }
+    }
     try {
       const updated = await api.updateComposition(active.id, {
-        is_public: !active.is_public,
+        is_public: next,
       });
       setCompositions((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
     } catch (err) {

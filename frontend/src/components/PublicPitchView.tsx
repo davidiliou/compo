@@ -2,13 +2,14 @@ import { useMemo } from "react";
 import type { Composition, TeamSize } from "../types";
 import {
   getMatchFormat,
+  playerDisplayName,
   playerShortName,
   starterPositions,
   subPositions,
 } from "../types";
-import "../components/CompositionExport.css";
+import "./PublicPitchView.css";
 
-/** Layouts aérés (même base que l’export PDF). */
+/** Layouts aérés pour lecture écran */
 const LAYOUTS: Record<TeamSize, Record<number, { top: string; left: string }>> = {
   15: {
     1: { top: "7%", left: "20%" },
@@ -69,40 +70,74 @@ export default function PublicPitchView({ composition, teamSize }: Props) {
     return map;
   }, [composition.slots]);
 
+  const namedRows = useMemo(() => {
+    return [...starters, ...subs]
+      .map((pos) => {
+        const player = byPos.get(pos)?.player ?? null;
+        return {
+          pos,
+          name: player ? playerDisplayName(player) : null,
+        };
+      })
+      .filter((r) => r.name);
+  }, [byPos, starters, subs]);
+
   return (
-    <div>
-      <div className={`export-pitch export-pitch-${format.teamSize}`}>
+    <div className="visitor-pitch-wrap">
+      <div className="visitor-pitch">
         {starters.map((pos) => {
           const player = byPos.get(pos)?.player ?? null;
           const layout = layoutMap[pos] ?? format.layout[pos];
+          const label = player
+            ? playerShortName(player) || playerDisplayName(player)
+            : null;
           return (
             <div
               key={pos}
-              className={`export-slot ${player ? "filled" : ""}`}
+              className={`visitor-slot ${player ? "filled" : ""}`}
               style={{ top: layout.top, left: layout.left }}
+              title={player ? playerDisplayName(player) : undefined}
             >
-              <span className="export-slot-pos">{pos}</span>
-              {player ? (
-                <span className="export-slot-name">{playerShortName(player)}</span>
+              <span className="visitor-slot-pos">{pos}</span>
+              {label ? (
+                <span className="visitor-slot-name">{label}</span>
               ) : (
-                <span className="export-slot-empty">—</span>
+                <span className="visitor-slot-empty">—</span>
               )}
             </div>
           );
         })}
       </div>
+
       <h3 className="visitor-subs-title">Remplaçants</h3>
-      <div className="export-subs">
+      <div className="visitor-subs">
         {subs.map((pos) => {
           const player = byPos.get(pos)?.player ?? null;
+          const label = player
+            ? playerShortName(player) || playerDisplayName(player)
+            : null;
           return (
-            <div key={pos} className={`export-sub ${player ? "filled" : ""}`}>
-              <span className="export-sub-pos">{pos}</span>
-              {player ? <span>{playerShortName(player)}</span> : <span className="muted">—</span>}
+            <div key={pos} className={`visitor-sub ${player ? "filled" : ""}`}>
+              <span className="visitor-sub-pos">{pos}</span>
+              {label ? <span>{label}</span> : <span className="muted">—</span>}
             </div>
           );
         })}
       </div>
+
+      {namedRows.length > 0 && (
+        <>
+          <h3 className="visitor-subs-title">Feuille (noms complets)</h3>
+          <ul className="visitor-list">
+            {namedRows.map((r) => (
+              <li key={r.pos}>
+                <span className="visitor-list-pos">{r.pos}</span>
+                <span className="visitor-list-name">{r.name}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
     </div>
   );
 }
