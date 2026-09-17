@@ -42,18 +42,30 @@
   padding: 3px;
   transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
   z-index: 2;
+  color: white;
+  font: inherit;
 }
 
-.pitch-slot.over {
+button.pitch-slot,
+button.sub-slot {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.pitch-slot.clickable:hover,
+.pitch-slot.clickable:focus-visible {
   background: rgba(196, 92, 38, 0.55);
   border-color: #fff;
   transform: translate(-50%, -50%) scale(1.08);
   z-index: 5;
+  outline: none;
 }
 
 .pitch-slot.filled {
   border-style: solid;
-  background: rgba(13, 59, 36, 0.55);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--green-deep);
 }
 
 .slot-pos {
@@ -62,7 +74,7 @@
   left: 4px;
   font-size: 0.65rem;
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.8);
+  opacity: 0.8;
 }
 
 .slot-label {
@@ -71,6 +83,25 @@
   color: rgba(255, 255, 255, 0.75);
   line-height: 1.1;
   padding: 0 2px;
+}
+
+.chip-num.on-slot {
+  min-width: auto;
+  height: auto;
+  background: transparent;
+  color: inherit;
+  font-size: 0.85rem;
+}
+
+.chip-name.on-slot {
+  font-size: 0.62rem;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
 }
 
 .saving-badge {
@@ -124,11 +155,16 @@
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.55);
   transition: border-color 0.15s ease, background 0.15s ease;
+  text-align: left;
+  color: inherit;
+  width: 100%;
 }
 
-.sub-slot.over {
+.sub-slot.clickable:hover,
+.sub-slot.clickable:focus-visible {
   border-color: var(--accent);
   background: rgba(196, 92, 38, 0.1);
+  outline: none;
 }
 
 .sub-slot.filled {
@@ -155,84 +191,9 @@
   font-size: 0.85rem;
 }
 
-.sub-slot .player-chip {
-  flex: 1;
+.sub-player {
+  font-size: 0.88rem;
   min-width: 0;
-  box-shadow: none;
-  padding: 0.3rem 0.45rem;
-}
-
-.bench-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  min-height: 180px;
-  padding: 0.75rem;
-  border: 2px dashed var(--line);
-  border-radius: 12px;
-  margin-bottom: 0.75rem;
-  background: rgba(255, 255, 255, 0.45);
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.bench-list.over {
-  border-color: var(--accent);
-  background: rgba(196, 92, 38, 0.08);
-}
-
-.player-chip {
-  display: flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.45rem 0.65rem;
-  background: white;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  cursor: grab;
-  user-select: none;
-  box-shadow: 0 2px 8px rgba(13, 59, 36, 0.08);
-  touch-action: none;
-}
-
-.player-chip:active {
-  cursor: grabbing;
-}
-
-.player-chip.compact {
-  flex-direction: column;
-  gap: 0;
-  padding: 0.2rem;
-  width: 100%;
-  height: 100%;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.92);
-  border: none;
-  box-shadow: none;
-  border-radius: 6px;
-}
-
-.player-chip.overlay {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-  transform: scale(1.05);
-}
-
-.player-chip.drag-ghost {
-  width: 52px;
-  height: 52px;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0;
-  padding: 0.2rem;
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  pointer-events: none;
-}
-
-.player-chip.drag-ghost .chip-name {
-  font-size: 0.62rem;
-  text-align: center;
-  line-height: 1.1;
-  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -251,27 +212,100 @@
   font-size: 0.85rem;
 }
 
-.player-chip.compact .chip-num {
-  min-width: auto;
-  height: auto;
-  background: transparent;
-  color: var(--green-deep);
-  font-size: 0.85rem;
+/* Modal affectation */
+.slot-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(19, 32, 24, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
 }
 
-.chip-name {
-  font-weight: 600;
-  font-size: 0.92rem;
-}
-
-.player-chip.compact .chip-name {
-  font-size: 0.62rem;
-  text-align: center;
-  line-height: 1.1;
-  max-width: 100%;
+.slot-modal {
+  width: min(480px, 100%);
+  max-height: min(85vh, 720px);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  margin: 0;
+}
+
+.slot-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.slot-modal-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  letter-spacing: 0.03em;
+  color: var(--green-deep);
+}
+
+.slot-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.slot-modal-list {
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-height: 120px;
+  padding-right: 0.15rem;
+}
+
+.slot-pick {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.55rem 0.7rem;
+  background: white;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.slot-pick:hover,
+.slot-pick:focus-visible {
+  border-color: var(--green-mid);
+  background: #eef6f1;
+  outline: none;
+}
+
+.slot-pick.current {
+  border-color: var(--accent);
+  background: rgba(196, 92, 38, 0.08);
+}
+
+.slot-pick-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.slot-pick-info strong {
+  font-size: 0.95rem;
+}
+
+.slot-pick-info small {
+  color: var(--muted);
+  font-size: 0.78rem;
 }
 
 @media (max-width: 800px) {
