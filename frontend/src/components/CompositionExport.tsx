@@ -35,7 +35,6 @@ export default function CompositionExport({
         return {
           position: pos,
           role: pos <= 15 ? POSITION_LABELS[pos] : `Remplaçant ${pos}`,
-          number: player?.number ?? null,
           name: player ? playerDisplayName(player) : "—",
           license: player?.license_number ?? "—",
           filled: !!player,
@@ -98,10 +97,7 @@ export default function CompositionExport({
                 >
                   <span className="export-slot-pos">{pos}</span>
                   {player ? (
-                    <>
-                      <span className="export-slot-num">{player.number || "·"}</span>
-                      <span className="export-slot-name">{playerShortName(player)}</span>
-                    </>
+                    <span className="export-slot-name">{playerShortName(player)}</span>
                   ) : (
                     <span className="export-slot-empty">—</span>
                   )}
@@ -120,9 +116,7 @@ export default function CompositionExport({
                 <div key={pos} className={`export-sub ${player ? "filled" : ""}`}>
                   <span className="export-sub-pos">{pos}</span>
                   {player ? (
-                    <span>
-                      <strong>{player.number || "·"}</strong> {playerShortName(player)}
-                    </span>
+                    <span>{playerShortName(player)}</span>
                   ) : (
                     <span className="muted">—</span>
                   )}
@@ -142,7 +136,6 @@ export default function CompositionExport({
                 <tr>
                   <th>Poste</th>
                   <th>Rôle</th>
-                  <th>N°</th>
                   <th>Nom</th>
                   <th>N° licence</th>
                 </tr>
@@ -152,7 +145,6 @@ export default function CompositionExport({
                   <tr key={r.position}>
                     <td>{r.position}</td>
                     <td>{r.role}</td>
-                    <td>{r.number}</td>
                     <td>{r.name}</td>
                     <td>{r.license}</td>
                   </tr>

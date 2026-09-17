@@ -29,13 +29,16 @@ function canPlayPosition(player: Player, position: number): boolean {
   return prefs.includes(position);
 }
 
-function SlotFace({ player }: { player: Player | null }) {
-  if (!player) return null;
+function SlotFace({ player }: { player: Player }) {
+  const first = (player.first_name || "").trim();
+  const lastInitial = (player.last_name || "").trim().charAt(0);
+  const label = lastInitial ? `${first} ${lastInitial}.` : first;
+
   return (
-    <>
-      <span className="chip-num on-slot">{player.number || "·"}</span>
-      <span className="chip-name on-slot">{playerShortName(player)}</span>
-    </>
+    <span className="slot-player">
+      {player.number > 0 && <span className="slot-jersey">{player.number}</span>}
+      <span className="slot-player-name">{label}</span>
+    </span>
   );
 }
 

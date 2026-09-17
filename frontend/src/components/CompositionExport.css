@@ -1,5 +1,6 @@
 .export-root {
   min-height: 100%;
+  overflow: visible;
 }
 
 .export-toolbar {
@@ -16,6 +17,7 @@
   border: 1px solid rgba(19, 32, 24, 0.12);
   padding: 1.5rem;
   box-shadow: 0 12px 40px rgba(13, 59, 36, 0.12);
+  overflow: visible;
 }
 
 .export-header {
@@ -76,55 +78,53 @@
 .export-slot {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 18%;
-  min-width: 52px;
+  width: 16%;
+  min-width: 48px;
   aspect-ratio: 1;
-  border: 2px solid rgba(255, 255, 255, 0.85);
-  border-radius: 8px;
-  background: rgba(13, 59, 36, 0.55);
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  border-radius: 50%;
+  background: rgba(10, 48, 30, 0.88);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2px;
-  color: white;
+  padding: 4px 2px 2px;
+  color: #f4f7f5;
 }
 
 .export-slot.filled {
-  background: rgba(255, 255, 255, 0.92);
-  color: #0d3b24;
-  border-color: #0d3b24;
+  background: linear-gradient(160deg, rgba(18, 78, 48, 0.95), rgba(10, 48, 30, 0.96));
+  border-color: rgba(232, 240, 234, 0.9);
 }
 
 .export-slot-pos {
   position: absolute;
   top: 2px;
-  left: 4px;
-  font-size: 0.6rem;
-  font-weight: 700;
-  opacity: 0.75;
-}
-
-.export-slot-num {
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.55rem;
   font-weight: 800;
-  font-size: 0.95rem;
-  line-height: 1;
+  opacity: 0.85;
 }
 
 .export-slot-name {
-  font-size: 0.58rem;
-  font-weight: 600;
+  font-size: 0.55rem;
+  font-weight: 700;
   text-align: center;
-  line-height: 1.1;
+  line-height: 1.15;
   max-width: 100%;
+  margin-top: 8px;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
 }
 
 .export-slot-empty {
   opacity: 0.6;
   font-size: 0.85rem;
+  margin-top: 6px;
 }
 
 .export-subs {
@@ -163,17 +163,44 @@
   font-size: 0.75rem;
 }
 
+.export-table-section {
+  overflow: visible;
+}
+
 .export-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
+  table-layout: fixed;
 }
 
 .export-table th,
 .export-table td {
   border: 1px solid rgba(19, 32, 24, 0.18);
-  padding: 0.45rem 0.6rem;
+  padding: 0.4rem 0.55rem;
   text-align: left;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+}
+
+.export-table th:nth-child(1),
+.export-table td:nth-child(1) {
+  width: 12%;
+}
+
+.export-table th:nth-child(2),
+.export-table td:nth-child(2) {
+  width: 28%;
+}
+
+.export-table th:nth-child(3),
+.export-table td:nth-child(3) {
+  width: 32%;
+}
+
+.export-table th:nth-child(4),
+.export-table td:nth-child(4) {
+  width: 28%;
 }
 
 .export-table th {
@@ -201,10 +228,19 @@
 @media print {
   @page {
     size: A4;
-    margin: 12mm;
+    margin: 10mm;
   }
 
-  body {
+  html,
+  body,
+  #root,
+  .app,
+  .main,
+  .export-root,
+  .export-sheet {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
     background: white !important;
   }
 
@@ -228,17 +264,63 @@
     padding: 0;
   }
 
-  .export-pitch {
-    width: 360px;
-    break-inside: avoid;
+  .export-header {
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.5rem;
   }
 
-  .export-subs-section,
-  .export-table-section {
+  .export-header h1 {
+    font-size: 1.6rem;
+  }
+
+  .export-pitch-section h2,
+  .export-subs-section h2,
+  .export-table-section h2 {
+    font-size: 1.15rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .export-pitch {
+    width: 220px;
     break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 0.6rem;
+  }
+
+  .export-subs {
+    margin-bottom: 0.75rem;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .export-subs-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .export-table-section {
+    break-inside: auto;
+    page-break-inside: auto;
+    overflow: visible !important;
   }
 
   .export-table {
-    font-size: 11pt;
+    font-size: 9.5pt;
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  .export-table thead {
+    display: table-header-group;
+  }
+
+  .export-table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .export-table th,
+  .export-table td {
+    padding: 0.25rem 0.35rem;
   }
 }
