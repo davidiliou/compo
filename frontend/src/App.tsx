@@ -37,7 +37,8 @@ function AppShell() {
     <div className="app">
       <header className="topbar">
         <NavLink to={isAdmin && username ? "/admin" : "/"} className="brand">
-          Compo Rugby
+          <img className="brand-logo" src="/logo.png" alt="" width={38} height={38} />
+          <span className="brand-text">Compo Rugby</span>
         </NavLink>
         <nav>
           {isAdmin && username ? (

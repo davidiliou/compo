@@ -44,6 +44,7 @@ export default function VisitorHome() {
   return (
     <div className="visitor-home">
       <header className="visitor-hero">
+        <img className="visitor-logo" src="/logo.png" alt="Costières XV" width={140} height={140} />
         <p className="visitor-eyebrow">Espace supporters</p>
         <h1 className="page-title">Compo Rugby</h1>
         <p className="page-sub">

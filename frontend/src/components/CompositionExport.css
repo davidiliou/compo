@@ -24,14 +24,14 @@
   text-align: center;
   margin-bottom: 1.25rem;
   padding-bottom: 1rem;
-  border-bottom: 2px solid #0d3b24;
+  border-bottom: 2px solid #010e1e;
 }
 
 .export-brand {
   margin: 0;
   font-family: "Bebas Neue", sans-serif;
   letter-spacing: 0.06em;
-  color: #0d3b24;
+  color: #010e1e;
   font-size: 1.35rem;
 }
 
@@ -40,7 +40,7 @@
   font-family: "Bebas Neue", sans-serif;
   font-size: 2.2rem;
   letter-spacing: 0.03em;
-  color: #0d3b24;
+  color: #010e1e;
 }
 
 .export-meta {
@@ -55,7 +55,7 @@
   font-family: "Bebas Neue", sans-serif;
   font-size: 1.4rem;
   letter-spacing: 0.03em;
-  color: #0d3b24;
+  color: #010e1e;
 }
 
 .export-pitch {
@@ -111,7 +111,7 @@
 .export-slot.filled {
   background: #f2efe6;
   border-color: #fff;
-  color: #0d3b24;
+  color: #010e1e;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.28);
 }
 
@@ -167,8 +167,8 @@
 }
 
 .export-sub.filled {
-  background: #e8f0ea;
-  border-color: #1a5c38;
+  background: #e8ecf2;
+  border-color: #1a2d45;
 }
 
 .export-sub-pos {
@@ -178,7 +178,7 @@
   min-width: 1.4rem;
   height: 1.4rem;
   border-radius: 5px;
-  background: #c45c26;
+  background: #c9a227;
   color: white;
   font-weight: 700;
   font-size: 0.75rem;
@@ -227,7 +227,7 @@
 }
 
 .export-table th {
-  background: #0d3b24;
+  background: #010e1e;
   color: white;
   font-size: 0.75rem;
   text-transform: uppercase;

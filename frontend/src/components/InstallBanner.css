@@ -9,7 +9,7 @@
   gap: 0.75rem;
   padding: 0.85rem 1rem;
   margin: 0 -1rem -1rem;
-  background: #0d3b24;
+  background: #010e1e;
   color: #f2efe6;
   border-top: 1px solid rgba(242, 239, 230, 0.2);
 }
@@ -27,7 +27,7 @@
 
 .install-banner .btn {
   background: #f2efe6;
-  color: #0d3b24;
+  color: #010e1e;
   border: none;
 }
 

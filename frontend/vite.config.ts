@@ -7,13 +7,20 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["icons/icon.svg", "icons/apple-touch-icon.png"],
+      includeAssets: [
+        "logo.png",
+        "icons/favicon-32.png",
+        "icons/apple-touch-icon.png",
+        "icons/icon-192.png",
+        "icons/icon-512.png",
+        "icons/icon-512-maskable.png",
+      ],
       manifest: {
         name: "Compo Rugby",
         short_name: "Compo",
         description: "Compositions d'équipe rugby — joueurs, matchs et XV",
-        theme_color: "#0d3b24",
-        background_color: "#0d3b24",
+        theme_color: "#010e1e",
+        background_color: "#010e1e",
         display: "standalone",
         orientation: "portrait-primary",
         lang: "fr",
@@ -32,7 +39,7 @@ export default defineConfig({
             type: "image/png",
           },
           {
-            src: "icons/icon-512.png",
+            src: "icons/icon-512-maskable.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",

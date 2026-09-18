@@ -31,6 +31,7 @@ export default function LoginPage() {
   return (
     <div className="login-page">
       <form className="login-card panel" onSubmit={onSubmit}>
+        <img className="login-logo" src="/logo.png" alt="Costières XV" width={120} height={120} />
         <p className="login-brand">Compo Rugby</p>
         <h1>Connexion</h1>
         <p className="page-sub" style={{ marginBottom: "1.25rem" }}>

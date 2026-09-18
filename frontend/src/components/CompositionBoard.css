@@ -91,7 +91,7 @@ button.sub-slot {
   border-color: rgba(255, 255, 255, 0.85);
   background: #f2efe6;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28);
-  color: #0d3b24;
+  color: #010e1e;
   min-height: 48px;
   padding: 0.5rem 0.55rem 0.45rem;
 }
@@ -99,7 +99,7 @@ button.sub-slot {
 .pitch-slot.filled:hover,
 .pitch-slot.filled:focus-visible {
   background: #fff8ef;
-  border-color: #c45c26;
+  border-color: #c9a227;
 }
 
 .slot-pos {
@@ -117,7 +117,7 @@ button.sub-slot {
 }
 
 .pitch-slot.filled .slot-pos {
-  color: #0d3b24;
+  color: #010e1e;
   background: rgba(13, 59, 36, 0.1);
   border-radius: 4px;
   padding: 1px 4px;
@@ -337,7 +337,7 @@ button.sub-slot {
 .slot-pick:hover,
 .slot-pick:focus-visible {
   border-color: var(--green-mid);
-  background: #eef6f1;
+  background: #e8ecf2;
   outline: none;
 }
 
