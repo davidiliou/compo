@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from .auth import seed_users
 from .database import Base, SessionLocal, engine
-from .routers import auth, compositions, match_events, matches, players, public, settings
+from .routers import auth, compositions, match_events, matches, players, public, settings, training
 from .routers.matches import ensure_composition_columns, ensure_match_columns
 from .routers.players import ensure_player_columns
 
@@ -25,6 +25,7 @@ app.include_router(matches.router, prefix="/api")
 app.include_router(match_events.router, prefix="/api")
 app.include_router(compositions.router, prefix="/api")
 app.include_router(settings.router, prefix="/api")
+app.include_router(training.router, prefix="/api")
 
 
 @app.on_event("startup")

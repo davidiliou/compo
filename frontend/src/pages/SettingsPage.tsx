@@ -7,6 +7,8 @@ export default function SettingsPage() {
     matches: number;
     compositions: number;
     slots: number;
+    training_seasons?: number;
+    training_templates?: number;
   } | null>(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -59,7 +61,14 @@ export default function SettingsPage() {
     try {
       const result = await api.restoreBackup(file);
       setMessage(
-        `Import OK : ${result.players} joueur(s), ${result.matches} match(s), ${result.compositions} composition(s), ${result.slots} placement(s).`,
+        `Import OK : ${result.players} joueur(s), ${result.matches} match(s), ${result.compositions} composition(s), ${result.slots} placement(s)` +
+          (result.training_seasons
+            ? `, ${result.training_seasons} saison(s)`
+            : "") +
+          (result.training_templates
+            ? `, ${result.training_templates} entraînement(s) type`
+            : "") +
+          ".",
       );
       await refreshInfo();
     } catch (e) {
@@ -149,6 +158,14 @@ export default function SettingsPage() {
               <tr>
                 <th>Placements (slots)</th>
                 <td>{info.slots}</td>
+              </tr>
+              <tr>
+                <th>Saisons d’entraînement</th>
+                <td>{info.training_seasons ?? 0}</td>
+              </tr>
+              <tr>
+                <th>Entraînements types</th>
+                <td>{info.training_templates ?? 0}</td>
               </tr>
             </tbody>
           </table>

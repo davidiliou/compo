@@ -281,3 +281,103 @@ export const SUB_COUNT = 8;
 export const MAX_POSITION = 23;
 export const STARTER_POSITIONS = starterPositions(MATCH_FORMATS[15]);
 export const SUB_POSITIONS = subPositions(MATCH_FORMATS[15]);
+
+// --- Planification entraînements ---
+
+export const WEEKDAYS_FR = [
+  "Lundi",
+  "Mardi",
+  "Mercredi",
+  "Jeudi",
+  "Vendredi",
+  "Samedi",
+  "Dimanche",
+] as const;
+
+export const DEFAULT_TRAINING_THEMES = [
+  "défense",
+  "attaque",
+  "cardio",
+  "passes",
+  "plaquages",
+  "mêlée",
+  "touche",
+  "jeu au pied",
+  "technique individuelle",
+  "collectif",
+] as const;
+
+export interface TrainingExercise {
+  id?: number;
+  title: string;
+  description: string;
+  duration_minutes: number;
+  sort_order: number;
+}
+
+export interface TrainingTemplate {
+  id: number;
+  title: string;
+  description: string;
+  themes: string[];
+  created_at: string;
+  exercises: TrainingExercise[];
+  total_duration_minutes: number;
+}
+
+export interface TrainingWeeklySlot {
+  id: number;
+  season_id: number;
+  weekday: number;
+  duration_minutes: number;
+  label: string;
+  sort_order: number;
+  weekday_label: string;
+}
+
+export interface TrainingAssignment {
+  id: number;
+  period_id: number;
+  template_id: number;
+  weekly_slot_id: number | null;
+  template: TrainingTemplate | null;
+  weekly_slot: TrainingWeeklySlot | null;
+}
+
+export interface TrainingPeriod {
+  id: number;
+  season_id: number;
+  name: string;
+  start_date: string;
+  end_date: string;
+  themes: string[];
+  notes: string;
+  assignments: TrainingAssignment[];
+}
+
+export interface TrainingSeasonSummary {
+  id: number;
+  name: string;
+  start_date: string;
+  end_date: string;
+  created_at: string;
+  slots_count: number;
+  periods_count: number;
+}
+
+export interface TrainingSeason {
+  id: number;
+  name: string;
+  start_date: string;
+  end_date: string;
+  created_at: string;
+  slots: TrainingWeeklySlot[];
+  periods: TrainingPeriod[];
+}
+
+export type TrainingWeeklySlotInput = {
+  weekday: number;
+  duration_minutes: number;
+  label: string;
+  sort_order: number;
+};

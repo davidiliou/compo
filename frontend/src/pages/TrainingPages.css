@@ -1,0 +1,365 @@
+.section-title {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  letter-spacing: 0.03em;
+  color: var(--green-deep);
+}
+
+.theme-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0.55rem 0;
+}
+
+.theme-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  background: rgba(26, 45, 69, 0.1);
+  color: var(--green-deep);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: lowercase;
+  border: 1px solid transparent;
+}
+
+.theme-chip-btn {
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.7);
+  border-color: var(--line);
+}
+
+.theme-chip-active {
+  cursor: pointer;
+  background: var(--green-deep);
+  color: white;
+  border-color: var(--green-deep);
+}
+
+.theme-chips-edit .theme-chip {
+  font-family: inherit;
+}
+
+.training-template-list,
+.period-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.training-template-card,
+.period-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.training-template-head,
+.period-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.training-template-head h2,
+.period-card h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  letter-spacing: 0.03em;
+  color: var(--green-deep);
+}
+
+.training-desc {
+  margin: 0.35rem 0 0.75rem;
+  color: var(--muted);
+  white-space: pre-wrap;
+}
+
+.exercise-preview {
+  margin: 0;
+  padding-left: 1.15rem;
+}
+
+.exercise-preview li {
+  margin-bottom: 0.55rem;
+}
+
+.exercise-preview p {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+  white-space: pre-wrap;
+  font-size: 0.92rem;
+}
+
+.exercise-time {
+  margin-left: 0.45rem;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+/* Modal entraînement : classes dédiées (évite les conflits .slot-modal / .field) */
+.training-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(19, 32, 24, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.training-modal {
+  width: min(1100px, 96vw);
+  max-height: min(94vh, 960px);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+  backdrop-filter: blur(6px);
+}
+
+.training-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
+.training-modal-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  letter-spacing: 0.03em;
+  color: var(--green-deep);
+}
+
+.training-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.training-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.training-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.training-field label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.training-field input,
+.training-field select,
+.training-field textarea {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+  font: inherit;
+}
+
+.training-field textarea {
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+.training-field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: end;
+}
+
+.training-field-row .training-field {
+  flex: 1 1 200px;
+  width: auto;
+}
+
+.training-field-row .training-field-sm {
+  flex: 0 0 110px;
+  max-width: 120px;
+}
+
+.training-field-row .training-field-full {
+  flex: 1 1 100%;
+}
+
+.exercises-editor {
+  margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  flex: 0 0 auto;
+}
+
+.exercises-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.exercises-editor-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: var(--green-deep);
+}
+
+.muted-inline {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.exercise-edit-block {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.85rem;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.exercise-edit-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+
+.exercise-index {
+  font-weight: 800;
+  color: var(--green-deep);
+  margin-right: 0.25rem;
+}
+
+.field textarea {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: white;
+  font: inherit;
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+.slots-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.slot-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: end;
+  padding: 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.assignment-list {
+  list-style: none;
+  margin: 0.65rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.assignment-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  background: rgba(26, 45, 69, 0.06);
+}
+
+.slot-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(19, 32, 24, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.slot-modal {
+  width: min(480px, 100%);
+  max-height: min(85vh, 720px);
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+  margin: 0;
+}
+
+.slot-modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.slot-modal-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  letter-spacing: 0.03em;
+  color: var(--green-deep);
+}
+
+.slot-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.player-modal-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}

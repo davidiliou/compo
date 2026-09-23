@@ -254,3 +254,206 @@ class PublicMatchEventOut(BaseModel):
 
 class SlotsBulkUpdate(BaseModel):
     slots: list[SlotAssign]
+
+
+# --- Planification entraînements ---
+
+WEEKDAYS_FR = (
+    "Lundi",
+    "Mardi",
+    "Mercredi",
+    "Jeudi",
+    "Vendredi",
+    "Samedi",
+    "Dimanche",
+)
+
+DEFAULT_TRAINING_THEMES = [
+    "défense",
+    "attaque",
+    "cardio",
+    "passes",
+    "plaquages",
+    "mêlée",
+    "touche",
+    "jeu au pied",
+    "technique individuelle",
+    "collectif",
+]
+
+
+class TrainingExerciseIn(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = Field("", max_length=4000)
+    duration_minutes: int = Field(10, ge=1, le=180)
+    sort_order: int = Field(0, ge=0)
+
+
+class TrainingExerciseOut(TrainingExerciseIn):
+    id: int
+
+    model_config = {"from_attributes": True}
+
+
+class TrainingTemplateBase(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = Field("", max_length=2000)
+    themes: list[str] = Field(default_factory=list)
+
+    @field_validator("themes")
+    @classmethod
+    def normalize_themes(cls, value: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for item in value or []:
+            text = str(item).strip().lower()
+            if text and text not in cleaned:
+                cleaned.append(text)
+        return cleaned
+
+
+class TrainingTemplateCreate(TrainingTemplateBase):
+    exercises: list[TrainingExerciseIn] = Field(default_factory=list)
+
+
+class TrainingTemplateUpdate(BaseModel):
+    title: str | None = Field(None, min_length=1, max_length=200)
+    description: str | None = Field(None, max_length=2000)
+    themes: list[str] | None = None
+    exercises: list[TrainingExerciseIn] | None = None
+
+    @field_validator("themes")
+    @classmethod
+    def normalize_themes(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return value
+        cleaned: list[str] = []
+        for item in value:
+            text = str(item).strip().lower()
+            if text and text not in cleaned:
+                cleaned.append(text)
+        return cleaned
+
+
+class TrainingTemplateOut(TrainingTemplateBase):
+    id: int
+    created_at: datetime
+    exercises: list[TrainingExerciseOut] = []
+    total_duration_minutes: int = 0
+
+    model_config = {"from_attributes": True}
+
+
+class TrainingWeeklySlotIn(BaseModel):
+    weekday: int = Field(..., ge=0, le=6)
+    duration_minutes: int = Field(90, ge=15, le=300)
+    label: str = Field("", max_length=100)
+    sort_order: int = Field(0, ge=0)
+
+
+class TrainingWeeklySlotOut(TrainingWeeklySlotIn):
+    id: int
+    season_id: int
+    weekday_label: str = ""
+
+    model_config = {"from_attributes": True}
+
+
+class TrainingAssignmentIn(BaseModel):
+    template_id: int
+    weekly_slot_id: int | None = None
+
+
+class TrainingAssignmentOut(BaseModel):
+    id: int
+    period_id: int
+    template_id: int
+    weekly_slot_id: int | None = None
+    template: TrainingTemplateOut | None = None
+    weekly_slot: TrainingWeeklySlotOut | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class TrainingPeriodBase(BaseModel):
+    name: str = Field("", max_length=150)
+    start_date: date
+    end_date: date
+    themes: list[str] = Field(default_factory=list)
+    notes: str = Field("", max_length=2000)
+
+    @field_validator("themes")
+    @classmethod
+    def normalize_themes(cls, value: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for item in value or []:
+            text = str(item).strip().lower()
+            if text and text not in cleaned:
+                cleaned.append(text)
+        return cleaned
+
+
+class TrainingPeriodCreate(TrainingPeriodBase):
+    pass
+
+
+class TrainingPeriodUpdate(BaseModel):
+    name: str | None = Field(None, max_length=150)
+    start_date: date | None = None
+    end_date: date | None = None
+    themes: list[str] | None = None
+    notes: str | None = Field(None, max_length=2000)
+
+    @field_validator("themes")
+    @classmethod
+    def normalize_themes(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return value
+        cleaned: list[str] = []
+        for item in value:
+            text = str(item).strip().lower()
+            if text and text not in cleaned:
+                cleaned.append(text)
+        return cleaned
+
+
+class TrainingPeriodOut(TrainingPeriodBase):
+    id: int
+    season_id: int
+    assignments: list[TrainingAssignmentOut] = []
+
+    model_config = {"from_attributes": True}
+
+
+class TrainingSeasonBase(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    start_date: date
+    end_date: date
+
+
+class TrainingSeasonCreate(TrainingSeasonBase):
+    slots: list[TrainingWeeklySlotIn] = Field(default_factory=list)
+
+
+class TrainingSeasonUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=100)
+    start_date: date | None = None
+    end_date: date | None = None
+    slots: list[TrainingWeeklySlotIn] | None = None
+
+
+class TrainingSeasonOut(TrainingSeasonBase):
+    id: int
+    created_at: datetime
+    slots: list[TrainingWeeklySlotOut] = []
+    periods: list[TrainingPeriodOut] = []
+
+    model_config = {"from_attributes": True}
+
+
+class TrainingSeasonSummary(TrainingSeasonBase):
+    id: int
+    created_at: datetime
+    slots_count: int = 0
+    periods_count: int = 0
+
+    model_config = {"from_attributes": True}

@@ -8,7 +8,19 @@ from sqlalchemy.orm import Session
 
 from ..auth import get_current_user
 from ..database import get_db
-from ..models import Composition, CompositionSlot, Match, MatchEvent, Player
+from ..models import (
+    Composition,
+    CompositionSlot,
+    Match,
+    MatchEvent,
+    Player,
+    TrainingAssignment,
+    TrainingExercise,
+    TrainingPeriod,
+    TrainingSeason,
+    TrainingTemplate,
+    TrainingWeeklySlot,
+)
 
 router = APIRouter(
     prefix="/settings",
@@ -22,6 +34,8 @@ class RestoreResult(BaseModel):
     matches: int
     compositions: int
     slots: int
+    training_seasons: int = 0
+    training_templates: int = 0
 
 
 def _json_default(value):
@@ -56,9 +70,17 @@ def download_backup(db: Session = Depends(get_db)):
     compositions = db.query(Composition).order_by(Composition.id).all()
     slots = db.query(CompositionSlot).order_by(CompositionSlot.id).all()
     events = db.query(MatchEvent).order_by(MatchEvent.id).all()
+    training_seasons = db.query(TrainingSeason).order_by(TrainingSeason.id).all()
+    training_slots = db.query(TrainingWeeklySlot).order_by(TrainingWeeklySlot.id).all()
+    training_periods = db.query(TrainingPeriod).order_by(TrainingPeriod.id).all()
+    training_templates = db.query(TrainingTemplate).order_by(TrainingTemplate.id).all()
+    training_exercises = db.query(TrainingExercise).order_by(TrainingExercise.id).all()
+    training_assignments = (
+        db.query(TrainingAssignment).order_by(TrainingAssignment.id).all()
+    )
 
     payload = {
-        "version": 1,
+        "version": 2,
         "app": "compo-rugby",
         "exported_at": datetime.utcnow().isoformat() + "Z",
         "players": [
@@ -119,6 +141,69 @@ def download_backup(db: Session = Depends(get_db)):
             }
             for e in events
         ],
+        "training_seasons": [
+            {
+                "id": s.id,
+                "name": s.name,
+                "start_date": s.start_date.isoformat(),
+                "end_date": s.end_date.isoformat(),
+                "created_at": s.created_at.isoformat() if s.created_at else None,
+            }
+            for s in training_seasons
+        ],
+        "training_weekly_slots": [
+            {
+                "id": s.id,
+                "season_id": s.season_id,
+                "weekday": s.weekday,
+                "duration_minutes": s.duration_minutes,
+                "label": s.label or "",
+                "sort_order": s.sort_order,
+            }
+            for s in training_slots
+        ],
+        "training_periods": [
+            {
+                "id": p.id,
+                "season_id": p.season_id,
+                "name": p.name or "",
+                "start_date": p.start_date.isoformat(),
+                "end_date": p.end_date.isoformat(),
+                "themes": p.themes or [],
+                "notes": p.notes or "",
+            }
+            for p in training_periods
+        ],
+        "training_templates": [
+            {
+                "id": t.id,
+                "title": t.title,
+                "description": t.description or "",
+                "themes": t.themes or [],
+                "created_at": t.created_at.isoformat() if t.created_at else None,
+            }
+            for t in training_templates
+        ],
+        "training_exercises": [
+            {
+                "id": e.id,
+                "template_id": e.template_id,
+                "title": e.title,
+                "description": e.description or "",
+                "duration_minutes": e.duration_minutes,
+                "sort_order": e.sort_order,
+            }
+            for e in training_exercises
+        ],
+        "training_assignments": [
+            {
+                "id": a.id,
+                "period_id": a.period_id,
+                "template_id": a.template_id,
+                "weekly_slot_id": a.weekly_slot_id,
+            }
+            for a in training_assignments
+        ],
     }
 
     stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
@@ -161,9 +246,21 @@ async def restore_backup(
     compositions_data = payload.get("compositions") or []
     slots_data = payload.get("slots") or []
     events_data = payload.get("events") or []
+    training_seasons_data = payload.get("training_seasons") or []
+    training_slots_data = payload.get("training_weekly_slots") or []
+    training_periods_data = payload.get("training_periods") or []
+    training_templates_data = payload.get("training_templates") or []
+    training_exercises_data = payload.get("training_exercises") or []
+    training_assignments_data = payload.get("training_assignments") or []
 
     try:
         # Ordre FK
+        db.query(TrainingAssignment).delete()
+        db.query(TrainingExercise).delete()
+        db.query(TrainingPeriod).delete()
+        db.query(TrainingWeeklySlot).delete()
+        db.query(TrainingTemplate).delete()
+        db.query(TrainingSeason).delete()
         db.query(MatchEvent).delete()
         db.query(CompositionSlot).delete()
         db.query(Composition).delete()
@@ -284,6 +381,120 @@ async def restore_backup(
                 )
             )
 
+        season_map: dict[int, int] = {}
+        for row in training_seasons_data:
+            old_id = row.get("id")
+            season = TrainingSeason(
+                name=str(row.get("name") or "Saison").strip() or "Saison",
+                start_date=_parse_date(row.get("start_date") or "2025-09-01"),
+                end_date=_parse_date(row.get("end_date") or "2026-06-30"),
+                created_at=_parse_datetime(row.get("created_at")) or datetime.utcnow(),
+            )
+            db.add(season)
+            db.flush()
+            if old_id is not None:
+                season_map[int(old_id)] = season.id
+
+        training_slot_map: dict[int, int] = {}
+        for row in training_slots_data:
+            old_id = row.get("id")
+            old_season_id = row.get("season_id")
+            new_season_id = (
+                season_map.get(int(old_season_id)) if old_season_id is not None else None
+            )
+            if new_season_id is None:
+                continue
+            weekday = max(0, min(6, int(row.get("weekday") or 0)))
+            slot = TrainingWeeklySlot(
+                season_id=new_season_id,
+                weekday=weekday,
+                duration_minutes=max(15, min(300, int(row.get("duration_minutes") or 90))),
+                label=str(row.get("label") or ""),
+                sort_order=int(row.get("sort_order") or 0),
+            )
+            db.add(slot)
+            db.flush()
+            if old_id is not None:
+                training_slot_map[int(old_id)] = slot.id
+
+        period_map: dict[int, int] = {}
+        for row in training_periods_data:
+            old_id = row.get("id")
+            old_season_id = row.get("season_id")
+            new_season_id = (
+                season_map.get(int(old_season_id)) if old_season_id is not None else None
+            )
+            if new_season_id is None:
+                continue
+            period = TrainingPeriod(
+                season_id=new_season_id,
+                name=str(row.get("name") or ""),
+                start_date=_parse_date(row.get("start_date") or "2025-09-01"),
+                end_date=_parse_date(row.get("end_date") or "2025-09-30"),
+                themes=list(row.get("themes") or []),
+                notes=str(row.get("notes") or ""),
+            )
+            db.add(period)
+            db.flush()
+            if old_id is not None:
+                period_map[int(old_id)] = period.id
+
+        template_map: dict[int, int] = {}
+        for row in training_templates_data:
+            old_id = row.get("id")
+            tpl = TrainingTemplate(
+                title=str(row.get("title") or "Entraînement").strip() or "Entraînement",
+                description=str(row.get("description") or ""),
+                themes=list(row.get("themes") or []),
+                created_at=_parse_datetime(row.get("created_at")) or datetime.utcnow(),
+            )
+            db.add(tpl)
+            db.flush()
+            if old_id is not None:
+                template_map[int(old_id)] = tpl.id
+
+        for row in training_exercises_data:
+            old_tpl_id = row.get("template_id")
+            new_tpl_id = (
+                template_map.get(int(old_tpl_id)) if old_tpl_id is not None else None
+            )
+            if new_tpl_id is None:
+                continue
+            db.add(
+                TrainingExercise(
+                    template_id=new_tpl_id,
+                    title=str(row.get("title") or "Exercice").strip() or "Exercice",
+                    description=str(row.get("description") or ""),
+                    duration_minutes=max(
+                        1, min(180, int(row.get("duration_minutes") or 10))
+                    ),
+                    sort_order=int(row.get("sort_order") or 0),
+                )
+            )
+
+        for row in training_assignments_data:
+            old_period_id = row.get("period_id")
+            old_tpl_id = row.get("template_id")
+            new_period_id = (
+                period_map.get(int(old_period_id)) if old_period_id is not None else None
+            )
+            new_tpl_id = (
+                template_map.get(int(old_tpl_id)) if old_tpl_id is not None else None
+            )
+            if new_period_id is None or new_tpl_id is None:
+                continue
+            old_slot_id = row.get("weekly_slot_id")
+            new_slot_id = None
+            if old_slot_id is not None:
+                new_slot_id = training_slot_map.get(int(old_slot_id))
+            db.add(
+                TrainingAssignment(
+                    period_id=new_period_id,
+                    template_id=new_tpl_id,
+                    weekly_slot_id=new_slot_id,
+                )
+            )
+
         db.commit()
     except HTTPException:
         db.rollback()
@@ -297,6 +508,8 @@ async def restore_backup(
         matches=len(match_map) or len(matches_data),
         compositions=len(comp_map),
         slots=slots_count,
+        training_seasons=len(season_map) or len(training_seasons_data),
+        training_templates=len(template_map) or len(training_templates_data),
     )
 
 
@@ -307,4 +520,6 @@ def settings_info(db: Session = Depends(get_db)):
         "matches": db.query(Match).count(),
         "compositions": db.query(Composition).count(),
         "slots": db.query(CompositionSlot).count(),
+        "training_seasons": db.query(TrainingSeason).count(),
+        "training_templates": db.query(TrainingTemplate).count(),
     }

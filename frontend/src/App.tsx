@@ -10,6 +10,10 @@ import MatchLivePage from "./pages/MatchLivePage";
 import VisitorHome from "./pages/VisitorHome";
 import VisitorMatchPage from "./pages/VisitorMatchPage";
 import VisitorLivePage from "./pages/VisitorLivePage";
+import TrainingPage from "./pages/TrainingPage";
+import TrainingSeasonPage from "./pages/TrainingSeasonPage";
+import TrainingTemplatesPage from "./pages/TrainingTemplatesPage";
+import TrainingSessionPage from "./pages/TrainingSessionPage";
 import InstallBanner from "./components/InstallBanner";
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -47,6 +51,7 @@ function AppShell() {
                 Matchs
               </NavLink>
               <NavLink to="/admin/players">Joueurs</NavLink>
+              <NavLink to="/admin/training">Entraînements</NavLink>
               <NavLink to="/admin/settings">Paramètres</NavLink>
               <NavLink to="/">Visiteurs</NavLink>
               <span className="user-chip">
@@ -91,6 +96,38 @@ function AppShell() {
             element={
               <Protected>
                 <PlayersPage />
+              </Protected>
+            }
+          />
+          <Route
+            path="/admin/training"
+            element={
+              <Protected>
+                <TrainingPage />
+              </Protected>
+            }
+          />
+          <Route
+            path="/admin/training/templates"
+            element={
+              <Protected>
+                <TrainingTemplatesPage />
+              </Protected>
+            }
+          />
+          <Route
+            path="/admin/training/session/:templateId"
+            element={
+              <Protected>
+                <TrainingSessionPage />
+              </Protected>
+            }
+          />
+          <Route
+            path="/admin/training/:id"
+            element={
+              <Protected>
+                <TrainingSeasonPage />
               </Protected>
             }
           />

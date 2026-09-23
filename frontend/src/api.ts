@@ -1,4 +1,16 @@
-import type { Composition, Match, MatchEvent, MatchEventType, MatchTeam, Player } from "./types";
+import type {
+  Composition,
+  Match,
+  MatchEvent,
+  MatchEventType,
+  MatchTeam,
+  Player,
+  TrainingPeriod,
+  TrainingSeason,
+  TrainingSeasonSummary,
+  TrainingTemplate,
+  TrainingWeeklySlotInput,
+} from "./types";
 
 const API = import.meta.env.VITE_API_URL || "/api";
 const TOKEN_KEY = "compo_token";
@@ -242,6 +254,8 @@ export const api = {
       matches: number;
       compositions: number;
       slots: number;
+      training_seasons?: number;
+      training_templates?: number;
     }>("/settings/info"),
   downloadBackup: () =>
     downloadAuthed("/settings/backup", `compo_backup_${Date.now()}.json`),
@@ -253,6 +267,121 @@ export const api = {
       matches: number;
       compositions: number;
       slots: number;
+      training_seasons?: number;
+      training_templates?: number;
     }>("/settings/restore", body);
   },
+
+  // --- Planification entraînements ---
+  getTrainingThemes: () => request<{ themes: string[] }>("/training/themes"),
+
+  getTrainingTemplates: () => request<TrainingTemplate[]>("/training/templates"),
+  getTrainingTemplate: (id: number) =>
+    request<TrainingTemplate>(`/training/templates/${id}`),
+  createTrainingTemplate: (data: {
+    title: string;
+    description?: string;
+    themes?: string[];
+    exercises?: {
+      title: string;
+      description: string;
+      duration_minutes: number;
+      sort_order: number;
+    }[];
+  }) =>
+    request<TrainingTemplate>("/training/templates", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateTrainingTemplate: (
+    id: number,
+    data: {
+      title?: string;
+      description?: string;
+      themes?: string[];
+      exercises?: {
+        title: string;
+        description: string;
+        duration_minutes: number;
+        sort_order: number;
+      }[];
+    },
+  ) =>
+    request<TrainingTemplate>(`/training/templates/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteTrainingTemplate: (id: number) =>
+    request<void>(`/training/templates/${id}`, { method: "DELETE" }),
+
+  getTrainingSeasons: () => request<TrainingSeasonSummary[]>("/training/seasons"),
+  getTrainingSeason: (id: number) =>
+    request<TrainingSeason>(`/training/seasons/${id}`),
+  createTrainingSeason: (data: {
+    name: string;
+    start_date: string;
+    end_date: string;
+    slots?: TrainingWeeklySlotInput[];
+  }) =>
+    request<TrainingSeason>("/training/seasons", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateTrainingSeason: (
+    id: number,
+    data: {
+      name?: string;
+      start_date?: string;
+      end_date?: string;
+      slots?: TrainingWeeklySlotInput[];
+    },
+  ) =>
+    request<TrainingSeason>(`/training/seasons/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteTrainingSeason: (id: number) =>
+    request<void>(`/training/seasons/${id}`, { method: "DELETE" }),
+
+  createTrainingPeriod: (
+    seasonId: number,
+    data: {
+      name?: string;
+      start_date: string;
+      end_date: string;
+      themes?: string[];
+      notes?: string;
+    },
+  ) =>
+    request<TrainingPeriod>(`/training/seasons/${seasonId}/periods`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateTrainingPeriod: (
+    id: number,
+    data: {
+      name?: string;
+      start_date?: string;
+      end_date?: string;
+      themes?: string[];
+      notes?: string;
+    },
+  ) =>
+    request<TrainingPeriod>(`/training/periods/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deleteTrainingPeriod: (id: number) =>
+    request<void>(`/training/periods/${id}`, { method: "DELETE" }),
+
+  createTrainingAssignment: (
+    periodId: number,
+    data: { template_id: number; weekly_slot_id?: number | null },
+  ) =>
+    request(`/training/periods/${periodId}/assignments`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  deleteTrainingAssignment: (id: number) =>
+    request<void>(`/training/assignments/${id}`, { method: "DELETE" }),
 };
