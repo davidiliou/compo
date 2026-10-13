@@ -4,6 +4,8 @@ __pycache__/
 *.pyc
 .venv/
 .env
+.env.local
+!.env.example
 pgdata/
 .DS_Store
 *.log

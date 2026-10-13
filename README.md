@@ -22,34 +22,43 @@ docker compose up --build
 - Interface : http://localhost:3080
 - API / docs : http://localhost:8000/docs
 
-## Déploiement gratuit sur Render
+## Déploiement gratuit sur Render + Neon
 
-Le Blueprint (`render.yaml`) utilise uniquement le **free tier** :
-
-- Web service API (Docker / FastAPI)
-- **Render Postgres** free
-- Static site (frontend)
+Le Blueprint (`render.yaml`) utilise le **free tier** Render pour l’API et le front.
+La base Postgres est sur **[Neon](https://neon.tech)** (free), à brancher via `DATABASE_URL`.
 
 ### Étapes
 
-1. Poussez le dépôt sur GitHub
-2. [Render](https://dashboard.render.com) → **New** → **Blueprint**
-3. Connectez le dépôt et déployez
+1. Créez un projet Postgres sur Neon et copiez la connection string (pooler, `sslmode=require`)
+2. Poussez le dépôt sur GitHub
+3. [Render](https://dashboard.render.com) → **New** → **Blueprint** (ou mettez à jour le service existant)
+4. Sur le service **compo-api** → **Environment** → définissez :
+   - `DATABASE_URL` = votre URL Neon  
+     Ex. `postgresql://USER:PASS@ep-….neon.tech/compo?sslmode=require`
+5. Déployez / redémarrez l’API
+6. Ouvrez l’admin → **Paramètres** → **Importer une sauvegarde** (JSON) pour restaurer les données
+
+Vous pouvez **supprimer la Postgres Render** une fois Neon branché et les données restaurées.
 
 URLs typiques :
 
 - API : `https://compo-api.onrender.com`
 - Front : `https://compo-web.onrender.com`
 
-### Limites free (Render)
+### Limites free
 
-- L’API et Postgres free **s’endorment** après inactivité
+- Render API et Neon free peuvent **s’endormir** après inactivité
 - Premier appel lent au réveil (~30–60 s)
-- Pas adapté à la production
-
-Si Render demande une CB : c’est souvent une vérification de compte. Le plan des services reste `free`.
+- Pas adapté à la production critique
 
 Si le nom de service API change, mettez à jour `VITE_API_URL` sur `compo-web` puis redéployez.
+
+### Local avec Neon
+
+1. Copiez `.env.example` → `.env` et collez votre `DATABASE_URL` Neon
+2. `docker compose up --build` (le backend lit `.env`)
+
+Postgres locale (optionnel) : `docker compose --profile local-db up --build` avec une URL locale dans `.env`.
 
 ## Stack
 

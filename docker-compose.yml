@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
+    profiles: ["local-db"]
     environment:
       POSTGRES_USER: compo
       POSTGRES_PASSWORD: compo
@@ -15,11 +16,11 @@ services:
 
   backend:
     build: ./backend
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql://compo:compo@db:5432/compo
-    depends_on:
-      db:
-        condition: service_healthy
+      # Par défaut : Neon via .env. Postgres locale : profile local-db + URL locale.
+      DATABASE_URL: ${DATABASE_URL:-postgresql://compo:compo@db:5432/compo}
     ports:
       - "8000:8000"
 
