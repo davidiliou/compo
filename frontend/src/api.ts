@@ -149,6 +149,10 @@ export const api = {
   },
   downloadPlayersTemplate: () =>
     downloadAuthed("/players/template.xlsx", "modele_joueurs.xlsx"),
+  exportPlayersExcel: () =>
+    downloadAuthed("/players/export.xlsx", "liste_joueurs.xlsx"),
+  exportPlayersPdf: () =>
+    downloadAuthed("/players/export.pdf", "liste_joueurs.pdf"),
 
   getMatches: () => request<Match[]>("/matches"),
   createMatch: (

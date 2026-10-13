@@ -4,12 +4,21 @@ from pydantic import BaseModel, Field, field_validator
 
 
 # --- Players ---
+PLAYER_STATUSES = frozenset({"titulaire", "remplacant", "apprentissage"})
+PLAYER_STATUS_LABELS = {
+    "titulaire": "Titulaire",
+    "remplacant": "Remplaçant",
+    "apprentissage": "Apprentissage",
+}
+
+
 class PlayerBase(BaseModel):
     number: int = Field(0, ge=0, le=99)
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field("", max_length=100)
     license_number: str = Field(..., min_length=1, max_length=50)
     positions: list[int] = Field(default_factory=list)
+    status: str = Field(default="titulaire")
 
     @field_validator("positions")
     @classmethod
@@ -22,6 +31,22 @@ class PlayerBase(BaseModel):
                 cleaned.append(p)
         return cleaned
 
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, value: str) -> str:
+        cleaned = (value or "titulaire").strip().lower()
+        # Accepte accents / variantes courantes
+        aliases = {
+            "titulaire": "titulaire",
+            "remplacant": "remplacant",
+            "remplaçant": "remplacant",
+            "apprentissage": "apprentissage",
+        }
+        mapped = aliases.get(cleaned, cleaned)
+        if mapped not in PLAYER_STATUSES:
+            raise ValueError("Statut invalide (titulaire, remplacant, apprentissage)")
+        return mapped
+
 
 class PlayerCreate(PlayerBase):
     pass
@@ -33,6 +58,7 @@ class PlayerUpdate(BaseModel):
     last_name: str | None = Field(None, max_length=100)
     license_number: str | None = Field(None, min_length=1, max_length=50)
     positions: list[int] | None = None
+    status: str | None = None
 
     @field_validator("positions")
     @classmethod
@@ -46,6 +72,23 @@ class PlayerUpdate(BaseModel):
             if p not in cleaned:
                 cleaned.append(p)
         return cleaned
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        cleaned = value.strip().lower()
+        aliases = {
+            "titulaire": "titulaire",
+            "remplacant": "remplacant",
+            "remplaçant": "remplacant",
+            "apprentissage": "apprentissage",
+        }
+        mapped = aliases.get(cleaned, cleaned)
+        if mapped not in PLAYER_STATUSES:
+            raise ValueError("Statut invalide (titulaire, remplacant, apprentissage)")
+        return mapped
 
 
 class PlayerOut(PlayerBase):

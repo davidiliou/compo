@@ -91,6 +91,7 @@ def download_backup(db: Session = Depends(get_db)):
                 "last_name": p.last_name or "",
                 "license_number": p.license_number,
                 "positions": p.positions or [],
+                "status": getattr(p, "status", None) or "titulaire",
             }
             for p in players
         ],
@@ -277,6 +278,12 @@ async def restore_backup(
                 last_name=str(row.get("last_name") or "").strip(),
                 license_number=str(row.get("license_number") or "").strip(),
                 positions=list(row.get("positions") or []),
+                status=(
+                    str(row.get("status") or "titulaire").strip().lower().replace("ç", "c")
+                    if str(row.get("status") or "").strip().lower().replace("ç", "c")
+                    in ("titulaire", "remplacant", "apprentissage")
+                    else "titulaire"
+                ),
             )
             if not player.license_number:
                 raise HTTPException(

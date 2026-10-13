@@ -5,6 +5,30 @@ export interface Player {
   last_name: string;
   license_number: string;
   positions: number[];
+  status: PlayerStatus;
+}
+
+export type PlayerStatus = "titulaire" | "remplacant" | "apprentissage";
+
+export const PLAYER_STATUS_OPTIONS: { value: PlayerStatus; label: string }[] = [
+  { value: "titulaire", label: "Titulaire" },
+  { value: "remplacant", label: "Remplaçant" },
+  { value: "apprentissage", label: "Apprentissage" },
+];
+
+export const PLAYER_STATUS_LABELS: Record<PlayerStatus, string> = {
+  titulaire: "Titulaire",
+  remplacant: "Remplaçant",
+  apprentissage: "Apprentissage",
+};
+
+export function normalizePlayerStatus(value: unknown): PlayerStatus {
+  const raw = String(value || "titulaire")
+    .trim()
+    .toLowerCase()
+    .replace("ç", "c");
+  if (raw === "remplacant" || raw === "apprentissage") return raw;
+  return "titulaire";
 }
 
 export function playerDisplayName(p: Pick<Player, "first_name" | "last_name">): string {

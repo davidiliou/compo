@@ -26,6 +26,8 @@ class Player(Base):
     last_name: Mapped[str] = mapped_column(String(100), nullable=False, default="")
     license_number: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     positions: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    # titulaire | remplacant | apprentissage
+    status: Mapped[str] = mapped_column(String(30), nullable=False, default="titulaire")
 
     slots: Mapped[list["CompositionSlot"]] = relationship(back_populates="player")
     events: Mapped[list["MatchEvent"]] = relationship(back_populates="player")

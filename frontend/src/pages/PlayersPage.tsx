@@ -1,7 +1,12 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { api } from "../api";
-import type { Player } from "../types";
-import { POSITION_LABELS } from "../types";
+import type { Player, PlayerStatus } from "../types";
+import {
+  PLAYER_STATUS_LABELS,
+  PLAYER_STATUS_OPTIONS,
+  POSITION_LABELS,
+  normalizePlayerStatus,
+} from "../types";
 
 const empty = {
   number: 0,
@@ -9,6 +14,7 @@ const empty = {
   last_name: "",
   license_number: "",
   positions: [] as number[],
+  status: "titulaire" as PlayerStatus,
 };
 
 function formatPositions(positions: number[]): string {
@@ -28,12 +34,16 @@ export default function PlayersPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [exporting, setExporting] = useState<"xlsx" | "pdf" | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      setPlayers(await api.getPlayers());
+      const rows = await api.getPlayers();
+      setPlayers(
+        rows.map((p) => ({ ...p, status: normalizePlayerStatus(p.status) })),
+      );
       setError("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur de chargement");
@@ -89,6 +99,7 @@ export default function PlayersPage() {
       last_name: p.last_name || "",
       license_number: p.license_number,
       positions: p.positions || [],
+      status: normalizePlayerStatus(p.status),
     });
     setPositionsText((p.positions || []).join(", "));
     setFormError("");
@@ -100,6 +111,7 @@ export default function PlayersPage() {
     const payload = {
       ...form,
       positions: parsePositionsInput(positionsText),
+      status: normalizePlayerStatus(form.status),
     };
     setSaving(true);
     setFormError("");
@@ -151,11 +163,26 @@ export default function PlayersPage() {
     }
   };
 
+  const onExport = async (kind: "xlsx" | "pdf") => {
+    setExporting(kind);
+    setError("");
+    try {
+      if (kind === "xlsx") await api.exportPlayersExcel();
+      else await api.exportPlayersPdf();
+      setInfo(kind === "xlsx" ? "Export Excel téléchargé." : "Export PDF téléchargé.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur d’export");
+    } finally {
+      setExporting(null);
+    }
+  };
+
   return (
     <div>
       <h1 className="page-title">Joueurs</h1>
       <p className="page-sub">
-        Effectif : n°, nom, prénom, postes (1–15) et licence. Import Excel possible.
+        Effectif : n°, nom, prénom, postes, licence et statut. L’export Excel se
+        ré-importe tel quel après modification (correspondance sur le n° de licence).
       </p>
 
       {error && <div className="error">{error}</div>}
@@ -192,6 +219,22 @@ export default function PlayersPage() {
           >
             Télécharger le modèle
           </button>
+          <button
+            className="btn btn-ghost"
+            type="button"
+            disabled={exporting !== null || players.length === 0}
+            onClick={() => onExport("xlsx")}
+          >
+            {exporting === "xlsx" ? "Export…" : "Exporter Excel"}
+          </button>
+          <button
+            className="btn btn-ghost"
+            type="button"
+            disabled={exporting !== null || players.length === 0}
+            onClick={() => onExport("pdf")}
+          >
+            {exporting === "pdf" ? "Export…" : "Exporter PDF"}
+          </button>
         </div>
       </div>
 
@@ -211,6 +254,7 @@ export default function PlayersPage() {
                     <th>Prénom</th>
                     <th>Postes</th>
                     <th>Licence</th>
+                    <th>Statut</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -224,6 +268,9 @@ export default function PlayersPage() {
                       <td>{p.first_name}</td>
                       <td>{formatPositions(p.positions || [])}</td>
                       <td>{p.license_number}</td>
+                      <td>
+                        {PLAYER_STATUS_LABELS[normalizePlayerStatus(p.status)]}
+                      </td>
                       <td>
                         <div className="row-actions">
                           <button
@@ -257,7 +304,8 @@ export default function PlayersPage() {
                   </div>
                   <p className="data-card-meta">
                     Postes : {formatPositions(p.positions || [])} · Licence{" "}
-                    {p.license_number}
+                    {p.license_number} ·{" "}
+                    {PLAYER_STATUS_LABELS[normalizePlayerStatus(p.status)]}
                   </p>
                   <div className="row-actions">
                     <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>
@@ -352,6 +400,25 @@ export default function PlayersPage() {
                   value={form.license_number}
                   onChange={(e) => setForm({ ...form, license_number: e.target.value })}
                 />
+              </div>
+              <div className="field">
+                <label htmlFor="status">Statut</label>
+                <select
+                  id="status"
+                  value={form.status}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      status: normalizePlayerStatus(e.target.value),
+                    })
+                  }
+                >
+                  {PLAYER_STATUS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="slot-modal-actions" style={{ marginTop: "0.5rem" }}>
                 <button className="btn btn-primary" type="submit" disabled={saving}>
